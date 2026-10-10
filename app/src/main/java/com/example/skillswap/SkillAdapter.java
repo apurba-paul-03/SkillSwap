@@ -10,9 +10,15 @@ import java.util.List;
 public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHolder> {
 
     private final List<SkillPost> skillList;
+    private final OnItemClickListener listener;
 
-    public SkillAdapter(List<SkillPost> skillList) {
+    public interface OnItemClickListener {
+        void onItemClick(SkillPost skill);
+    }
+
+    public SkillAdapter(List<SkillPost> skillList, OnItemClickListener listener) {
         this.skillList = skillList;
+        this.listener = listener;
     }
 
     @NonNull
@@ -33,6 +39,12 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
         holder.binding.tvAuthor.setText("By: " + skill.getAuthorName());
         holder.binding.tvLocation.setText(skill.getLocation());
         holder.binding.tvStatus.setText(skill.getStatus());
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(skill);
+            }
+        });
     }
 
     @Override

@@ -4,9 +4,7 @@ plugins {
 
 android {
     namespace = "com.example.skillswap"
-    compileSdk {
-        version = release(37)
-    }
+    compileSdk = 37 // Or your current target SDK version
 
     defaultConfig {
         applicationId = "com.example.skillswap"
@@ -18,12 +16,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     buildTypes {
         release {
-            optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
-            }
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
