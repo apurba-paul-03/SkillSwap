@@ -1,5 +1,6 @@
 package com.example.skillswap;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,8 +27,14 @@ public class MainActivity extends AppCompatActivity {
         loadMockData();
 
         skillAdapter = new SkillAdapter(skillList, skill -> {
-            // When a card is clicked, show a Toast (Later, we'll launch a DetailActivity here using an Intent)
-            Toast.makeText(MainActivity.this, "Clicked: " + skill.getTitle(), Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, SkillDetailActivity.class);
+            intent.putExtra("TITLE", skill.getTitle());
+            intent.putExtra("CATEGORY", skill.getCategory());
+            intent.putExtra("DESC", skill.getDescription());
+            intent.putExtra("AUTHOR", skill.getAuthorName());
+            intent.putExtra("LOC", skill.getLocation());
+            intent.putExtra("STATUS", skill.getStatus());
+            startActivity(intent);
         });
 
         binding.recyclerViewSkills.setAdapter(skillAdapter);
