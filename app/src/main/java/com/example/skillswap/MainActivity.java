@@ -1,6 +1,8 @@
 package com.example.skillswap;
 
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -10,6 +12,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private SkillAdapter skillAdapter;
+    private NetworkStateReceiver networkStateReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,5 +34,20 @@ public class MainActivity extends AppCompatActivity {
         });
 
         binding.recyclerViewSkills.setAdapter(skillAdapter);
+
+        networkStateReceiver = new NetworkStateReceiver();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(networkStateReceiver, filter);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unregisterReceiver(networkStateReceiver);
     }
 }
