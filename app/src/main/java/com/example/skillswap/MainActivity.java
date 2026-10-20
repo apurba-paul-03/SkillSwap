@@ -36,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
         binding.recyclerViewSkills.setAdapter(skillAdapter);
 
         networkStateReceiver = new NetworkStateReceiver();
+
+        Intent serviceIntent = new Intent(MainActivity.this, SyncSkillsService.class);
+        startService(serviceIntent);
     }
 
     @Override

@@ -29,6 +29,9 @@
             android:name=".SkillDetailActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+        <service
+            android:name=".SyncSkillsService"
+            android:exported="false" />
 
     </application>
 
