@@ -1,16 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#F8F9FA">
+
+    <!-- User Header Bar -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvUserHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Logged in as:"
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvUserEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="student@university.edu"
+                    android:textColor="@android:color/black"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnLogout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:text="Sign Out"
+                android:textColor="@android:color/holo_red_dark" />
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <!-- Button to trigger the Retrofit Location Dialog -->
     <Button
         android:id="@+id/btnSelectLocation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select External Meeting Spot (API)"
+        android:text="Select External Meeting Spot (Retrofit API)"
         android:backgroundTint="?attr/colorPrimary"
         android:textColor="@android:color/white"
         android:layout_marginBottom="8dp" />
@@ -26,7 +79,7 @@
         android:textColor="@android:color/darker_gray"
         android:layout_marginBottom="12dp" />
 
-    <!-- Your existing RecyclerView for skill posts -->
+    <!-- RecyclerView for skill posts -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewSkills"
         android:layout_width="match_parent"

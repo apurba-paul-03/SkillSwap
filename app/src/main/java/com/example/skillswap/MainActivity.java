@@ -1,15 +1,21 @@
 package com.example.skillswap;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.skillswap.databinding.ActivityMainBinding;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private SkillAdapter skillAdapter;
-    private NetworkStateReceiver networkStateReceiver;
+    private SystemEventsReceiver systemEventsReceiver;
     private List<SkillPost> skillList;
 
     // Hold fetched Retrofit locations in memory
@@ -34,13 +40,34 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // 1. Display logged-in user email or guest status
+        String userEmail = getIntent().getStringExtra("USER_EMAIL");
+        if (userEmail == null || userEmail.isEmpty()) {
+            if (FirebaseAuth.getInstance().getCurrentUser() != null && FirebaseAuth.getInstance().getCurrentUser().getEmail() != null) {
+                userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+            } else {
+                userEmail = "Guest Student";
+            }
+        }
+        binding.tvUserEmail.setText(userEmail);
+
+        // Sign Out Listener
+        binding.btnLogout.setOnClickListener(v -> {
+            try {
+                FirebaseAuth.getInstance().signOut();
+            } catch (Exception ignored) {}
+            Toast.makeText(MainActivity.this, "Signed out successfully.", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+            finish();
+        });
+
         cachedLocations = new ArrayList<>();
         binding.recyclerViewSkills.setLayoutManager(new LinearLayoutManager(this));
 
-        // 1. Initialize empty backing list for the adapter
+        // 2. Initialize empty backing list for the adapter
         skillList = new ArrayList<>();
 
-        // 2. Setup the adapter with the list and click listener
+        // 3. Setup the adapter with the list and click listener
         skillAdapter = new SkillAdapter(skillList, skill -> {
             Intent intent = new Intent(MainActivity.this, SkillDetailActivity.class);
             intent.putExtra("TITLE", skill.getTitle());
@@ -54,13 +81,20 @@ public class MainActivity extends AppCompatActivity {
 
         binding.recyclerViewSkills.setAdapter(skillAdapter);
 
-        networkStateReceiver = new NetworkStateReceiver();
+        // Initialize System Broadcast Receiver (Rubric requirement)
+        systemEventsReceiver = new SystemEventsReceiver();
 
-        // Start background service
+        // 4. Start Foreground Service for background skill sync with Notification Tray card
+        requestNotificationPermission();
         Intent serviceIntent = new Intent(MainActivity.this, SyncSkillsService.class);
-        startService(serviceIntent);
+        try {
+            ContextCompat.startForegroundService(this, serviceIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting foreground service: " + e.getMessage());
+            startService(serviceIntent);
+        }
 
-        // 3. Fetch skill data asynchronously from Firebase Firestore / Local Cache
+        // 5. Fetch skill data asynchronously from Firebase Firestore / Local Cache
         SkillRepository.getInstance().getSkills(new SkillRepository.DataLoadCallback() {
             @Override
             public void onDataLoaded(List<SkillPost> skills) {
@@ -77,10 +111,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 4. Fetch external Retrofit meeting locations in background
+        // 6. Fetch external Retrofit meeting locations in background
         fetchExternalLocations();
 
-        // 5. Button click listener to show the meeting spots dialog
+        // 7. Button click listener to show the meeting spots dialog
         binding.btnSelectLocation.setOnClickListener(v -> {
             if (cachedLocations != null && !cachedLocations.isEmpty()) {
                 showLocationDialog(cachedLocations);
@@ -88,6 +122,14 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Locations are still loading from API. Please wait...", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
     }
 
     private void fetchExternalLocations() {
@@ -121,17 +163,12 @@ public class MainActivity extends AppCompatActivity {
                 .setTitle("Select External Meeting Spot")
                 .setItems(locationNames, (dialog, which) -> {
                     LocationModel selected = locations.get(which);
-
-                    // Format the selection string
                     String venueDetails = selected.getName() + " — City: " + selected.getCity();
 
-                    // Update the TextView on the main screen!
                     binding.tvSelectedLocation.setText("Meeting Spot: " + venueDetails);
                     binding.tvSelectedLocation.setTextColor(getResources().getColor(android.R.color.black));
 
-                    Toast.makeText(MainActivity.this,
-                            "Meeting spot updated!",
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Meeting spot updated!", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -140,13 +177,22 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
-        registerReceiver(networkStateReceiver, filter);
+        // Register System Broadcast Receiver for Battery, Airplane Mode, and Connectivity events
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        filter.addAction(Intent.ACTION_BATTERY_LOW);
+        filter.addAction(Intent.ACTION_BATTERY_OKAY);
+        filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        registerReceiver(systemEventsReceiver, filter);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(networkStateReceiver);
+        if (systemEventsReceiver != null) {
+            try {
+                unregisterReceiver(systemEventsReceiver);
+            } catch (IllegalArgumentException ignored) {}
+        }
     }
 }

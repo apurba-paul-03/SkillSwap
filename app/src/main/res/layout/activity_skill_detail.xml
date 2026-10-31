@@ -113,6 +113,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Open Location on Map (Intent)" />
+
+        <Button
+            android:id="@+id/btnInviteContact"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@android:color/holo_purple"
+            android:textColor="@android:color/white"
+            android:text="Invite Classmate via Contacts (Content Provider)" />
     </LinearLayout>
 
 </LinearLayout>
