@@ -9,6 +9,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private SkillAdapter skillAdapter;
     private SystemEventsReceiver systemEventsReceiver;
     private List<SkillPost> skillList;
+    private ActivityResultLauncher<Intent> createSkillLauncher;
 
     // Hold fetched Retrofit locations in memory
     private List<LocationModel> cachedLocations;
@@ -81,7 +84,23 @@ public class MainActivity extends AppCompatActivity {
 
         binding.recyclerViewSkills.setAdapter(skillAdapter);
 
-        // Initialize System Broadcast Receiver (Rubric requirement)
+        // Initialize ActivityResultLauncher for CreateSkillActivity
+        createSkillLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        loadSkillsData();
+                    }
+                }
+        );
+
+        // Floating Action Button click listener to open CreateSkillActivity
+        binding.fabAddSkill.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, CreateSkillActivity.class);
+            createSkillLauncher.launch(intent);
+        });
+
+        // Initialize System Broadcast Receiver
         systemEventsReceiver = new SystemEventsReceiver();
 
         // 4. Start Foreground Service for background skill sync with Notification Tray card
@@ -95,6 +114,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 5. Fetch skill data asynchronously from Firebase Firestore / Local Cache
+        loadSkillsData();
+
+        // 6. Fetch external Retrofit meeting locations in background
+        fetchExternalLocations();
+
+        // 7. Button click listener to show the meeting spots dialog
+        binding.btnSelectLocation.setOnClickListener(v -> {
+            if (cachedLocations != null && !cachedLocations.isEmpty()) {
+                showLocationDialog(cachedLocations);
+            } else {
+                Toast.makeText(MainActivity.this, "Locations are still loading from API. Please wait...", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadSkillsData() {
         SkillRepository.getInstance().getSkills(new SkillRepository.DataLoadCallback() {
             @Override
             public void onDataLoaded(List<SkillPost> skills) {
@@ -108,18 +143,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onError(Exception e) {
                 Log.e(TAG, "Error loading skills: " + e.getMessage());
-            }
-        });
-
-        // 6. Fetch external Retrofit meeting locations in background
-        fetchExternalLocations();
-
-        // 7. Button click listener to show the meeting spots dialog
-        binding.btnSelectLocation.setOnClickListener(v -> {
-            if (cachedLocations != null && !cachedLocations.isEmpty()) {
-                showLocationDialog(cachedLocations);
-            } else {
-                Toast.makeText(MainActivity.this, "Locations are still loading from API. Please wait...", Toast.LENGTH_SHORT).show();
             }
         });
     }

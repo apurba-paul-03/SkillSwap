@@ -18,6 +18,11 @@ public class SkillRepository {
         void onError(Exception e);
     }
 
+    public interface SaveCallback {
+        void onSuccess();
+        void onError(Exception e);
+    }
+
     private SkillRepository() {
         db = FirebaseFirestore.getInstance();
         skillList = new ArrayList<>();
@@ -66,5 +71,26 @@ public class SkillRepository {
                         callback.onDataLoaded(skillList);
                     }
                 });
+    }
+
+    public void addSkill(SkillPost skill, SaveCallback callback) {
+        // Step 1: Add to local backing list immediately for instant UI update
+        skillList.add(0, skill);
+
+        // Step 2: Instantly notify UI callback so activity finishes without waiting for network task
+        if (callback != null) {
+            callback.onSuccess();
+        }
+
+        // Step 3: Attempt Firebase Firestore persistence in background
+        try {
+            db.collection("skills")
+                    .document(skill.getId())
+                    .set(skill)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Skill post saved to Firestore successfully: " + skill.getTitle()))
+                    .addOnFailureListener(e -> Log.e(TAG, "Firestore save failed, post retained in local list", e));
+        } catch (Exception e) {
+            Log.e(TAG, "Firestore Exception, local cache preserved", e);
+        }
     }
 }
