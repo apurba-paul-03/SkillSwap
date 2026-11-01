@@ -5,19 +5,26 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.skillswap.databinding.ItemSkillCardBinding;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHolder> {
 
-    private final List<SkillPost> skillList;
+    private final List<SkillPost> fullSkillList;
+    private final List<SkillPost> displayedSkillList;
     private final OnItemClickListener listener;
+    private String currentQuery = "";
+    private String currentCategory = "All";
 
     public interface OnItemClickListener {
         void onItemClick(SkillPost skill);
     }
 
     public SkillAdapter(List<SkillPost> skillList, OnItemClickListener listener) {
-        this.skillList = skillList;
+        this.fullSkillList = new ArrayList<>(skillList);
+        this.displayedSkillList = new ArrayList<>(skillList);
         this.listener = listener;
     }
 
@@ -32,7 +39,7 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
 
     @Override
     public void onBindViewHolder(@NonNull SkillViewHolder holder, int position) {
-        SkillPost skill = skillList.get(position);
+        SkillPost skill = displayedSkillList.get(position);
         holder.binding.tvTitle.setText(skill.getTitle());
         holder.binding.tvCategory.setText(skill.getCategory());
         holder.binding.tvDescription.setText(skill.getDescription());
@@ -49,7 +56,42 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
 
     @Override
     public int getItemCount() {
-        return skillList.size();
+        return displayedSkillList.size();
+    }
+
+    public void updateList(List<SkillPost> newSkills) {
+        fullSkillList.clear();
+        fullSkillList.addAll(newSkills);
+        applyFilter();
+    }
+
+    public void filter(String query, String category) {
+        this.currentQuery = query != null ? query.trim().toLowerCase(Locale.getDefault()) : "";
+        if (category != null) {
+            this.currentCategory = category;
+        }
+        applyFilter();
+    }
+
+    private void applyFilter() {
+        displayedSkillList.clear();
+
+        for (SkillPost skill : fullSkillList) {
+            boolean matchesCategory = currentCategory.equalsIgnoreCase("All")
+                    || (skill.getCategory() != null && skill.getCategory().equalsIgnoreCase(currentCategory));
+
+            boolean matchesQuery = currentQuery.isEmpty()
+                    || (skill.getTitle() != null && skill.getTitle().toLowerCase(Locale.getDefault()).contains(currentQuery))
+                    || (skill.getCategory() != null && skill.getCategory().toLowerCase(Locale.getDefault()).contains(currentQuery))
+                    || (skill.getDescription() != null && skill.getDescription().toLowerCase(Locale.getDefault()).contains(currentQuery))
+                    || (skill.getAuthorName() != null && skill.getAuthorName().toLowerCase(Locale.getDefault()).contains(currentQuery))
+                    || (skill.getLocation() != null && skill.getLocation().toLowerCase(Locale.getDefault()).contains(currentQuery));
+
+            if (matchesCategory && matchesQuery) {
+                displayedSkillList.add(skill);
+            }
+        }
+        notifyDataSetChanged();
     }
 
     public static class SkillViewHolder extends RecyclerView.ViewHolder {

@@ -13,10 +13,12 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.skillswap.databinding.ActivityMainBinding;
+import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
@@ -33,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private SystemEventsReceiver systemEventsReceiver;
     private List<SkillPost> skillList;
     private ActivityResultLauncher<Intent> createSkillLauncher;
+    private String selectedCategory = "All";
+    private String currentSearchQuery = "";
 
     // Hold fetched Retrofit locations in memory
     private List<LocationModel> cachedLocations;
@@ -84,6 +88,38 @@ public class MainActivity extends AppCompatActivity {
 
         binding.recyclerViewSkills.setAdapter(skillAdapter);
 
+        // 4. Setup Live Search Listener
+        binding.searchViewSkills.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                currentSearchQuery = query;
+                skillAdapter.filter(currentSearchQuery, selectedCategory);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                currentSearchQuery = newText;
+                skillAdapter.filter(currentSearchQuery, selectedCategory);
+                return true;
+            }
+        });
+
+        // 5. Setup Category Filter Chip Listener
+        binding.chipGroupCategory.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (!checkedIds.isEmpty()) {
+                Chip chip = findViewById(checkedIds.get(0));
+                if (chip != null) {
+                    selectedCategory = chip.getText().toString();
+                } else {
+                    selectedCategory = "All";
+                }
+            } else {
+                selectedCategory = "All";
+            }
+            skillAdapter.filter(currentSearchQuery, selectedCategory);
+        });
+
         // Initialize ActivityResultLauncher for CreateSkillActivity
         createSkillLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -103,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         // Initialize System Broadcast Receiver
         systemEventsReceiver = new SystemEventsReceiver();
 
-        // 4. Start Foreground Service for background skill sync with Notification Tray card
+        // Start Foreground Service for background skill sync with Notification Tray card
         requestNotificationPermission();
         Intent serviceIntent = new Intent(MainActivity.this, SyncSkillsService.class);
         try {
@@ -113,13 +149,13 @@ public class MainActivity extends AppCompatActivity {
             startService(serviceIntent);
         }
 
-        // 5. Fetch skill data asynchronously from Firebase Firestore / Local Cache
+        // Fetch skill data asynchronously from Firebase Firestore / Local Cache
         loadSkillsData();
 
-        // 6. Fetch external Retrofit meeting locations in background
+        // Fetch external Retrofit meeting locations in background
         fetchExternalLocations();
 
-        // 7. Button click listener to show the meeting spots dialog
+        // Button click listener to show the meeting spots dialog
         binding.btnSelectLocation.setOnClickListener(v -> {
             if (cachedLocations != null && !cachedLocations.isEmpty()) {
                 showLocationDialog(cachedLocations);
@@ -136,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     skillList.clear();
                     skillList.addAll(skills);
-                    skillAdapter.notifyDataSetChanged();
+                    skillAdapter.updateList(skillList);
                 });
             }
 
