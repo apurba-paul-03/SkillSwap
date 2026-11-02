@@ -2,20 +2,33 @@ package com.example.skillswap;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.skillswap.databinding.ActivitySkillDetailBinding;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import java.util.Locale;
 
 public class SkillDetailActivity extends AppCompatActivity {
 
     private ActivitySkillDetailBinding binding;
     private ActivityResultLauncher<Intent> contactPickerLauncher;
+
+    private double totalRatingPoints = 9.6;
+    private int reviewCount = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +80,80 @@ public class SkillDetailActivity extends AppCompatActivity {
             Intent contactIntent = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
             contactPickerLauncher.launch(contactIntent);
         });
+
+        // Rating & Peer Review Listener
+        binding.btnRateSession.setOnClickListener(v -> showRatingDialog());
+    }
+
+    private void showRatingDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Rate Session & Write Peer Review");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 30, 50, 10);
+
+        final String[] ratingOptions = {"⭐⭐⭐⭐⭐ (5.0 - Excellent)", "⭐⭐⭐⭐ (4.0 - Good)", "⭐⭐⭐ (3.0 - Average)", "⭐⭐ (2.0 - Poor)", "⭐ (1.0 - Terrible)"};
+        final double[] ratingValues = {5.0, 4.0, 3.0, 2.0, 1.0};
+        final int[] selectedRatingIndex = {0};
+
+        builder.setSingleChoiceItems(ratingOptions, 0, (dialog, which) -> selectedRatingIndex[0] = which);
+
+        final EditText etReview = new EditText(this);
+        etReview.setHint("Write your feedback about this session...");
+        layout.addView(etReview);
+        builder.setView(layout);
+
+        builder.setPositiveButton("Submit Review", (dialog, which) -> {
+            String comment = etReview.getText().toString().trim();
+            if (TextUtils.isEmpty(comment)) {
+                comment = "Great skill session!";
+            }
+
+            double stars = ratingValues[selectedRatingIndex[0]];
+            addPeerReview(stars, comment);
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void addPeerReview(double ratingStars, String comment) {
+        totalRatingPoints += ratingStars;
+        reviewCount++;
+
+        double avgRating = totalRatingPoints / reviewCount;
+        binding.tvRatingScore.setText(String.format(Locale.getDefault(), "⭐ %.1f", avgRating));
+        binding.tvReviewCount.setText(String.format(Locale.getDefault(), "(%d Peer Reviews)", reviewCount));
+
+        // Get reviewer name from logged in user or fallback
+        String reviewerName = "Student";
+        try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null && user.getEmail() != null) {
+                reviewerName = user.getEmail().split("@")[0];
+            }
+        } catch (Exception ignored) {}
+
+        // Create new review view dynamically
+        TextView reviewTv = new TextView(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 12, 0, 0);
+        reviewTv.setLayoutParams(params);
+        reviewTv.setBackgroundColor(Color.parseColor("#F0F4F8"));
+        reviewTv.setPadding(24, 24, 24, 24);
+        reviewTv.setTextColor(Color.parseColor("#333333"));
+        reviewTv.setTextSize(13);
+
+        String starSymbols = ratingStars >= 5 ? "⭐⭐⭐⭐⭐" : ratingStars >= 4 ? "⭐⭐⭐⭐" : "⭐⭐⭐";
+        reviewTv.setText(String.format(Locale.getDefault(), "\"%s\" — %s (%s)", comment, reviewerName, starSymbols));
+
+        binding.layoutReviewsContainer.addView(reviewTv, 0);
+
+        Toast.makeText(this, "Thank you! Your peer review has been recorded.", Toast.LENGTH_SHORT).show();
     }
 
     /**
