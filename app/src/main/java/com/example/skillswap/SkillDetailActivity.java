@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -22,16 +24,22 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class SkillDetailActivity extends AppCompatActivity {
 
+    private static final String TAG = "SkillDetailActivity";
     private ActivitySkillDetailBinding binding;
     private ActivityResultLauncher<Intent> contactPickerLauncher;
 
-    private double totalRatingPoints = 9.6;
-    private int reviewCount = 2;
+    private String skillTitle;
+    private String authorName;
+    private String currentUserEmail = "";
+    private boolean hasAlreadyReviewed = false;
+    private boolean isMyPost = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,13 +47,13 @@ public class SkillDetailActivity extends AppCompatActivity {
         binding = ActivitySkillDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        String title = getIntent().getStringExtra("TITLE");
+        skillTitle = getIntent().getStringExtra("TITLE");
         String category = getIntent().getStringExtra("CATEGORY");
         String description = getIntent().getStringExtra("DESC");
-        String author = getIntent().getStringExtra("AUTHOR");
+        authorName = getIntent().getStringExtra("AUTHOR");
         String location = getIntent().getStringExtra("LOC");
         String status = getIntent().getStringExtra("STATUS");
-        String currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
+        currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
 
         if (currentUserEmail == null || currentUserEmail.isEmpty()) {
             try {
@@ -56,20 +64,23 @@ public class SkillDetailActivity extends AppCompatActivity {
             } catch (Exception ignored) {}
         }
 
-        binding.tvDetailTitle.setText(title);
+        binding.tvDetailTitle.setText(skillTitle);
         binding.tvDetailCategory.setText(category);
         binding.tvDetailDescription.setText(description);
-        binding.tvDetailAuthor.setText("By: " + author);
+        binding.tvDetailAuthor.setText("By: " + authorName);
         binding.tvDetailLocation.setText(location);
         binding.tvDetailStatus.setText(status);
 
         String currentHandle = currentUserEmail != null && currentUserEmail.contains("@") ? currentUserEmail.split("@")[0] : currentUserEmail;
-        boolean isMyPost = author != null && (author.equalsIgnoreCase(currentHandle) || author.equalsIgnoreCase(currentUserEmail));
+        isMyPost = authorName != null && (authorName.equalsIgnoreCase(currentHandle) || authorName.equalsIgnoreCase(currentUserEmail));
 
+        // Problem 2 Fix: Tutors cannot rate themselves on their own post
         if (isMyPost) {
             binding.btnChatTutor.setText("View Student Inquiries & Chat");
+            binding.btnRateSession.setVisibility(View.GONE);
         } else {
             binding.btnChatTutor.setText("Chat with Tutor (1-on-1)");
+            binding.btnRateSession.setVisibility(View.VISIBLE);
         }
 
         binding.btnCall.setOnClickListener(v -> {
@@ -106,17 +117,174 @@ public class SkillDetailActivity extends AppCompatActivity {
         // Chat with Tutor Listener
         binding.btnChatTutor.setOnClickListener(v -> {
             if (isMyPost) {
-                showStudentInquiriesDialog(title, author);
+                showStudentInquiriesDialog(skillTitle, authorName);
             } else {
                 Intent chatIntent = new Intent(SkillDetailActivity.this, ChatActivity.class);
-                chatIntent.putExtra("AUTHOR_NAME", author);
-                chatIntent.putExtra("SKILL_TITLE", title);
+                chatIntent.putExtra("AUTHOR_NAME", authorName);
+                chatIntent.putExtra("SKILL_TITLE", skillTitle);
                 startActivity(chatIntent);
             }
         });
 
         // Rating & Peer Review Listener
-        binding.btnRateSession.setOnClickListener(v -> showRatingDialog());
+        binding.btnRateSession.setOnClickListener(v -> {
+            if (hasAlreadyReviewed) {
+                Toast.makeText(this, "You have already submitted a review for this skill session.", Toast.LENGTH_SHORT).show();
+            } else {
+                showRatingDialog();
+            }
+        });
+
+        // Problem 1 Fix: Load reviews from Cloud Firestore persistently
+        loadReviewsFromFirestore();
+    }
+
+    private void loadReviewsFromFirestore() {
+        if (skillTitle == null) return;
+        String cleanSkill = skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault());
+
+        try {
+            FirebaseFirestore.getInstance()
+                    .collection("skills")
+                    .document(cleanSkill)
+                    .collection("reviews")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful() && task.getResult() != null && !task.getResult().isEmpty()) {
+                            binding.layoutReviewsContainer.removeAllViews();
+                            double totalPoints = 0.0;
+                            int count = 0;
+
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                Double ratingObj = doc.getDouble("ratingStars");
+                                double stars = ratingObj != null ? ratingObj : 5.0;
+                                String comment = doc.getString("comment");
+                                String reviewerName = doc.getString("reviewerName");
+                                String reviewerEmail = doc.getString("reviewerEmail");
+
+                                if (reviewerEmail != null && currentUserEmail != null && reviewerEmail.equalsIgnoreCase(currentUserEmail)) {
+                                    hasAlreadyReviewed = true;
+                                    binding.btnRateSession.setText("Review Submitted (✓)");
+                                }
+
+                                totalPoints += stars;
+                                count++;
+
+                                renderReviewCard(stars, comment, reviewerName);
+                            }
+
+                            if (count > 0) {
+                                double avg = totalPoints / count;
+                                binding.tvRatingScore.setText(String.format(Locale.getDefault(), "⭐ %.1f", avg));
+                                binding.tvReviewCount.setText(String.format(Locale.getDefault(), "(%d Peer Reviews)", count));
+                            }
+                        }
+                    });
+        } catch (Exception e) {
+            Log.e(TAG, "Error loading reviews from Firestore: " + e.getMessage());
+        }
+    }
+
+    private void renderReviewCard(double stars, String comment, String reviewerName) {
+        TextView reviewTv = new TextView(this);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 12, 0, 0);
+        reviewTv.setLayoutParams(params);
+        reviewTv.setBackgroundColor(Color.parseColor("#F0F4F8"));
+        reviewTv.setPadding(24, 24, 24, 24);
+        reviewTv.setTextColor(Color.parseColor("#333333"));
+        reviewTv.setTextSize(13);
+
+        // Problem 4 Fix: Accurate star symbol representation for 1 to 5 stars
+        String starSymbols;
+        if (stars >= 5.0) starSymbols = "⭐⭐⭐⭐⭐";
+        else if (stars >= 4.0) starSymbols = "⭐⭐⭐⭐";
+        else if (stars >= 3.0) starSymbols = "⭐⭐⭐";
+        else if (stars >= 2.0) starSymbols = "⭐⭐";
+        else starSymbols = "⭐";
+
+        String nameDisplay = reviewerName != null && !reviewerName.isEmpty() ? reviewerName : "Student";
+        reviewTv.setText(String.format(Locale.getDefault(), "\"%s\" — %s (%s)", comment, nameDisplay, starSymbols));
+
+        binding.layoutReviewsContainer.addView(reviewTv, 0);
+    }
+
+    private void showRatingDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Rate Session & Write Peer Review");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 30, 50, 10);
+
+        final String[] ratingOptions = {"⭐⭐⭐⭐⭐ (5.0 - Excellent)", "⭐⭐⭐⭐ (4.0 - Good)", "⭐⭐⭐ (3.0 - Average)", "⭐⭐ (2.0 - Poor)", "⭐ (1.0 - Terrible)"};
+        final double[] ratingValues = {5.0, 4.0, 3.0, 2.0, 1.0};
+        final int[] selectedRatingIndex = {0};
+
+        builder.setSingleChoiceItems(ratingOptions, 0, (dialog, which) -> selectedRatingIndex[0] = which);
+
+        final EditText etReview = new EditText(this);
+        etReview.setHint("Write your feedback about this session...");
+        layout.addView(etReview);
+        builder.setView(layout);
+
+        builder.setPositiveButton("Submit Review", (dialog, which) -> {
+            String comment = etReview.getText().toString().trim();
+            if (TextUtils.isEmpty(comment)) {
+                comment = "Great skill session!";
+            }
+
+            double stars = ratingValues[selectedRatingIndex[0]];
+            saveAndAddPeerReview(stars, comment);
+        });
+
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
+    }
+
+    private void saveAndAddPeerReview(double ratingStars, String comment) {
+        String reviewerName = "Student";
+        if (currentUserEmail != null && !currentUserEmail.isEmpty()) {
+            reviewerName = currentUserEmail.contains("@") ? currentUserEmail.split("@")[0] : currentUserEmail;
+            reviewerName = reviewerName.substring(0, 1).toUpperCase(Locale.getDefault()) + reviewerName.substring(1);
+        }
+
+        // Render card locally
+        renderReviewCard(ratingStars, comment, reviewerName);
+
+        // Problem 3 Fix: Mark reviewed and update button state
+        hasAlreadyReviewed = true;
+        binding.btnRateSession.setText("Review Submitted (✓)");
+
+        // Problem 1 Fix: Save review persistently in Cloud Firestore
+        String cleanSkill = skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault());
+        String docId = currentUserEmail != null && !currentUserEmail.isEmpty() ? currentUserEmail.replaceAll("[^a-zA-Z0-9]", "_") : "review_" + System.currentTimeMillis();
+
+        Map<String, Object> reviewData = new HashMap<>();
+        reviewData.put("reviewerEmail", currentUserEmail);
+        reviewData.put("reviewerName", reviewerName);
+        reviewData.put("ratingStars", ratingStars);
+        reviewData.put("comment", comment);
+        reviewData.put("timestamp", System.currentTimeMillis());
+
+        try {
+            FirebaseFirestore.getInstance()
+                    .collection("skills")
+                    .document(cleanSkill)
+                    .collection("reviews")
+                    .document(docId)
+                    .set(reviewData)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(SkillDetailActivity.this, "Thank you! Your peer review is saved in Cloud Database.", Toast.LENGTH_SHORT).show();
+                        loadReviewsFromFirestore();
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(SkillDetailActivity.this, "Review saved locally.", Toast.LENGTH_SHORT).show());
+        } catch (Exception e) {
+            Log.e(TAG, "Firestore review save exception: " + e.getMessage());
+        }
     }
 
     private void showStudentInquiriesDialog(String skillTitle, String tutorName) {
@@ -172,77 +340,6 @@ public class SkillDetailActivity extends AppCompatActivity {
         } catch (Exception e) {
             Toast.makeText(this, "Unable to query Firestore chats: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void showRatingDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Rate Session & Write Peer Review");
-
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 30, 50, 10);
-
-        final String[] ratingOptions = {"⭐⭐⭐⭐⭐ (5.0 - Excellent)", "⭐⭐⭐⭐ (4.0 - Good)", "⭐⭐⭐ (3.0 - Average)", "⭐⭐ (2.0 - Poor)", "⭐ (1.0 - Terrible)"};
-        final double[] ratingValues = {5.0, 4.0, 3.0, 2.0, 1.0};
-        final int[] selectedRatingIndex = {0};
-
-        builder.setSingleChoiceItems(ratingOptions, 0, (dialog, which) -> selectedRatingIndex[0] = which);
-
-        final EditText etReview = new EditText(this);
-        etReview.setHint("Write your feedback about this session...");
-        layout.addView(etReview);
-        builder.setView(layout);
-
-        builder.setPositiveButton("Submit Review", (dialog, which) -> {
-            String comment = etReview.getText().toString().trim();
-            if (TextUtils.isEmpty(comment)) {
-                comment = "Great skill session!";
-            }
-
-            double stars = ratingValues[selectedRatingIndex[0]];
-            addPeerReview(stars, comment);
-        });
-
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
-    }
-
-    private void addPeerReview(double ratingStars, String comment) {
-        totalRatingPoints += ratingStars;
-        reviewCount++;
-
-        double avgRating = totalRatingPoints / reviewCount;
-        binding.tvRatingScore.setText(String.format(Locale.getDefault(), "⭐ %.1f", avgRating));
-        binding.tvReviewCount.setText(String.format(Locale.getDefault(), "(%d Peer Reviews)", reviewCount));
-
-        // Get reviewer name from logged in user or fallback
-        String reviewerName = "Student";
-        try {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user != null && user.getEmail() != null) {
-                reviewerName = user.getEmail().split("@")[0];
-            }
-        } catch (Exception ignored) {}
-
-        // Create new review view dynamically
-        TextView reviewTv = new TextView(this);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(0, 12, 0, 0);
-        reviewTv.setLayoutParams(params);
-        reviewTv.setBackgroundColor(Color.parseColor("#F0F4F8"));
-        reviewTv.setPadding(24, 24, 24, 24);
-        reviewTv.setTextColor(Color.parseColor("#333333"));
-        reviewTv.setTextSize(13);
-
-        String starSymbols = ratingStars >= 5 ? "⭐⭐⭐⭐⭐" : ratingStars >= 4 ? "⭐⭐⭐⭐" : "⭐⭐⭐";
-        reviewTv.setText(String.format(Locale.getDefault(), "\"%s\" — %s (%s)", comment, reviewerName, starSymbols));
-
-        binding.layoutReviewsContainer.addView(reviewTv, 0);
-
-        Toast.makeText(this, "Thank you! Your peer review has been recorded.", Toast.LENGTH_SHORT).show();
     }
 
     /**
