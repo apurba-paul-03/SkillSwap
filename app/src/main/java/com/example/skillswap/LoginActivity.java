@@ -3,6 +3,7 @@ package com.example.skillswap;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -16,7 +17,6 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etPassword;
     private Button btnLogin;
     private Button btnRegister;
-    private Button btnGuest;
     private FirebaseAuth mAuth;
 
     @Override
@@ -28,7 +28,7 @@ public class LoginActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
-        btnGuest = findViewById(R.id.btnGuest);
+        Button btnGuest = findViewById(R.id.btnGuest);
 
         try {
             mAuth = FirebaseAuth.getInstance();
@@ -36,7 +36,7 @@ public class LoginActivity extends AppCompatActivity {
             mAuth = null;
         }
 
-        // Check if user is already logged in
+        // Check if user is already logged in with Firebase
         if (mAuth != null && mAuth.getCurrentUser() != null) {
             navigateToMain(mAuth.getCurrentUser().getEmail());
             return;
@@ -51,14 +51,20 @@ public class LoginActivity extends AppCompatActivity {
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
 
-        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
-            Toast.makeText(this, "Please enter both email and password", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError("Please enter a valid email address (e.g. name@university.edu)");
+            Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (TextUtils.isEmpty(password)) {
+            etPassword.setError("Password is required");
+            Toast.makeText(this, "Please enter your password", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (mAuth == null) {
-            Toast.makeText(this, "Firebase Auth offline. Continuing in Guest mode.", Toast.LENGTH_SHORT).show();
-            navigateToMain(email);
+            Toast.makeText(this, "Firebase Auth offline. Use Demo Guest mode.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -69,12 +75,11 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         String userEmail = user != null && user.getEmail() != null ? user.getEmail() : email;
-                        Toast.makeText(LoginActivity.this, "Authentication successful!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Sign In successful!", Toast.LENGTH_SHORT).show();
                         navigateToMain(userEmail);
                     } else {
                         String errorMsg = task.getException() != null ? task.getException().getMessage() : "Authentication failed";
-                        Toast.makeText(LoginActivity.this, "Auth Failed: " + errorMsg + "\nFallback: Logged in as Guest", Toast.LENGTH_LONG).show();
-                        navigateToMain(email);
+                        Toast.makeText(LoginActivity.this, "Sign In Failed: " + errorMsg + "\nTip: If you don't have an account, tap 'Create Account (Register)' first.", Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -83,14 +88,20 @@ public class LoginActivity extends AppCompatActivity {
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String password = etPassword.getText() != null ? etPassword.getText().toString().trim() : "";
 
-        if (TextUtils.isEmpty(email) || password.length() < 6) {
-            Toast.makeText(this, "Please enter a valid email and a 6+ character password", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError("Please enter a valid email address (e.g. name@university.edu)");
+            Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (TextUtils.isEmpty(password) || password.length() < 6) {
+            etPassword.setError("Password must be at least 6 characters");
+            Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (mAuth == null) {
-            Toast.makeText(this, "Firebase Auth offline. Registered locally as: " + email, Toast.LENGTH_SHORT).show();
-            navigateToMain(email);
+            Toast.makeText(this, "Firebase Auth offline. Use Demo Guest mode.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -101,12 +112,11 @@ public class LoginActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         String userEmail = user != null && user.getEmail() != null ? user.getEmail() : email;
-                        Toast.makeText(LoginActivity.this, "User registered successfully!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginActivity.this, "Account created & registered successfully!", Toast.LENGTH_SHORT).show();
                         navigateToMain(userEmail);
                     } else {
                         String errorMsg = task.getException() != null ? task.getException().getMessage() : "Registration failed";
-                        Toast.makeText(LoginActivity.this, "Register Failed: " + errorMsg + "\nFallback: Registered as Demo Student", Toast.LENGTH_LONG).show();
-                        navigateToMain(email);
+                        Toast.makeText(LoginActivity.this, "Register Failed: " + errorMsg, Toast.LENGTH_LONG).show();
                     }
                 });
     }

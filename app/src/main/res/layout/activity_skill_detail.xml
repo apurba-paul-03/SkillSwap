@@ -190,9 +190,18 @@
             android:orientation="vertical">
 
             <Button
+                android:id="@+id/btnChatTutor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:backgroundTint="?attr/colorPrimary"
+                android:textColor="@android:color/white"
+                android:text="Chat with Tutor (Firebase Real-Time)" />
+
+            <Button
                 android:id="@+id/btnCall"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="Call Author (Intent)" />
 
             <Button

@@ -8,6 +8,7 @@ import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -37,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> createSkillLauncher;
     private String selectedCategory = "All";
     private String currentSearchQuery = "";
+    private String currentUserEmail = "Guest Student";
+    private boolean isTutorMode = false;
 
     // Hold fetched Retrofit locations in memory
     private List<LocationModel> cachedLocations;
@@ -48,15 +51,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         // 1. Display logged-in user email or guest status
-        String userEmail = getIntent().getStringExtra("USER_EMAIL");
-        if (userEmail == null || userEmail.isEmpty()) {
-            if (FirebaseAuth.getInstance().getCurrentUser() != null && FirebaseAuth.getInstance().getCurrentUser().getEmail() != null) {
-                userEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-            } else {
-                userEmail = "Guest Student";
-            }
+        String email = getIntent().getStringExtra("USER_EMAIL");
+        if (email != null && !email.trim().isEmpty()) {
+            currentUserEmail = email;
+        } else if (FirebaseAuth.getInstance().getCurrentUser() != null && FirebaseAuth.getInstance().getCurrentUser().getEmail() != null) {
+            currentUserEmail = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        } else {
+            currentUserEmail = "Guest Student";
         }
-        binding.tvUserEmail.setText(userEmail);
+        binding.tvUserEmail.setText(currentUserEmail);
 
         // Sign Out Listener
         binding.btnLogout.setOnClickListener(v -> {
@@ -83,12 +86,26 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("AUTHOR", skill.getAuthorName());
             intent.putExtra("LOC", skill.getLocation());
             intent.putExtra("STATUS", skill.getStatus());
+            intent.putExtra("CURRENT_USER_EMAIL", currentUserEmail);
             startActivity(intent);
         });
 
         binding.recyclerViewSkills.setAdapter(skillAdapter);
 
-        // 4. Setup Live Search Listener
+        // 4. Mode Switcher Listener (🎓 Student Mode vs 👨‍🏫 Tutor Mode)
+        binding.toggleGroupMode.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) {
+                if (checkedId == R.id.btnModeTutor) {
+                    isTutorMode = true;
+                    applyTutorModeUI();
+                } else {
+                    isTutorMode = false;
+                    applyStudentModeUI();
+                }
+            }
+        });
+
+        // 5. Setup Live Search Listener
         binding.searchViewSkills.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -105,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 5. Setup Category Filter Chip Listener
+        // 6. Setup Category Filter Chip Listener
         binding.chipGroupCategory.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (!checkedIds.isEmpty()) {
                 Chip chip = findViewById(checkedIds.get(0));
@@ -133,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
         // Floating Action Button click listener to open CreateSkillActivity
         binding.fabAddSkill.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, CreateSkillActivity.class);
+            intent.putExtra("USER_EMAIL", currentUserEmail);
             createSkillLauncher.launch(intent);
         });
 
@@ -165,6 +183,32 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void applyStudentModeUI() {
+        binding.searchViewSkills.setVisibility(View.VISIBLE);
+        binding.scrollCategoryFilter.setVisibility(View.VISIBLE);
+        binding.fabAddSkill.setVisibility(View.GONE);
+        binding.tvFeedTitle.setText("Available Skills to Learn");
+        loadSkillsData();
+    }
+
+    private void applyTutorModeUI() {
+        binding.searchViewSkills.setVisibility(View.GONE);
+        binding.scrollCategoryFilter.setVisibility(View.GONE);
+        binding.fabAddSkill.setVisibility(View.VISIBLE);
+        binding.tvFeedTitle.setText("My Offered Skills & Dashboard");
+
+        // Filter list to show posts authored by the logged-in user
+        String myHandle = currentUserEmail.contains("@") ? currentUserEmail.split("@")[0] : currentUserEmail;
+        List<SkillPost> mySkills = new ArrayList<>();
+        for (SkillPost post : skillList) {
+            if (post.getAuthorName() != null &&
+                    (post.getAuthorName().equalsIgnoreCase(myHandle) || post.getAuthorName().equalsIgnoreCase(currentUserEmail))) {
+                mySkills.add(post);
+            }
+        }
+        skillAdapter.updateList(mySkills);
+    }
+
     private void loadSkillsData() {
         SkillRepository.getInstance().getSkills(new SkillRepository.DataLoadCallback() {
             @Override
@@ -172,7 +216,11 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     skillList.clear();
                     skillList.addAll(skills);
-                    skillAdapter.updateList(skillList);
+                    if (isTutorMode) {
+                        applyTutorModeUI();
+                    } else {
+                        skillAdapter.updateList(skillList);
+                    }
                 });
             }
 

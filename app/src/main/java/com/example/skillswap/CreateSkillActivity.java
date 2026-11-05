@@ -62,14 +62,30 @@ public class CreateSkillActivity extends AppCompatActivity {
 
         btnSubmit.setEnabled(false);
 
-        // Determine Author Name from logged in Firebase user or fallback
+        // Determine Author Name from logged in user email or intent extra
+        String userEmail = getIntent().getStringExtra("USER_EMAIL");
+        if (userEmail == null || userEmail.isEmpty()) {
+            try {
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null && user.getEmail() != null) {
+                    userEmail = user.getEmail();
+                }
+            } catch (Exception ignored) {}
+        }
+
         String authorName = "Student";
-        try {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user != null && user.getEmail() != null) {
-                authorName = user.getEmail().split("@")[0];
+        if (userEmail != null && !userEmail.isEmpty()) {
+            if (userEmail.contains("@")) {
+                String handle = userEmail.split("@")[0];
+                if (!handle.isEmpty()) {
+                    authorName = handle.substring(0, 1).toUpperCase() + handle.substring(1);
+                } else {
+                    authorName = handle;
+                }
+            } else {
+                authorName = userEmail;
             }
-        } catch (Exception ignored) {}
+        }
 
         String id = UUID.randomUUID().toString().substring(0, 8);
         SkillPost newPost = new SkillPost(id, title, category, description, authorName, location, "Available");

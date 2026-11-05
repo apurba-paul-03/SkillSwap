@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -19,7 +18,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.skillswap.databinding.ActivitySkillDetailBinding;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class SkillDetailActivity extends AppCompatActivity {
@@ -42,6 +45,16 @@ public class SkillDetailActivity extends AppCompatActivity {
         String author = getIntent().getStringExtra("AUTHOR");
         String location = getIntent().getStringExtra("LOC");
         String status = getIntent().getStringExtra("STATUS");
+        String currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
+
+        if (currentUserEmail == null || currentUserEmail.isEmpty()) {
+            try {
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null && user.getEmail() != null) {
+                    currentUserEmail = user.getEmail();
+                }
+            } catch (Exception ignored) {}
+        }
 
         binding.tvDetailTitle.setText(title);
         binding.tvDetailCategory.setText(category);
@@ -49,6 +62,15 @@ public class SkillDetailActivity extends AppCompatActivity {
         binding.tvDetailAuthor.setText("By: " + author);
         binding.tvDetailLocation.setText(location);
         binding.tvDetailStatus.setText(status);
+
+        String currentHandle = currentUserEmail != null && currentUserEmail.contains("@") ? currentUserEmail.split("@")[0] : currentUserEmail;
+        boolean isMyPost = author != null && (author.equalsIgnoreCase(currentHandle) || author.equalsIgnoreCase(currentUserEmail));
+
+        if (isMyPost) {
+            binding.btnChatTutor.setText("View Student Inquiries & Chat");
+        } else {
+            binding.btnChatTutor.setText("Chat with Tutor (1-on-1)");
+        }
 
         binding.btnCall.setOnClickListener(v -> {
             Intent callIntent = new Intent(Intent.ACTION_DIAL);
@@ -81,8 +103,75 @@ public class SkillDetailActivity extends AppCompatActivity {
             contactPickerLauncher.launch(contactIntent);
         });
 
+        // Chat with Tutor Listener
+        binding.btnChatTutor.setOnClickListener(v -> {
+            if (isMyPost) {
+                showStudentInquiriesDialog(title, author);
+            } else {
+                Intent chatIntent = new Intent(SkillDetailActivity.this, ChatActivity.class);
+                chatIntent.putExtra("AUTHOR_NAME", author);
+                chatIntent.putExtra("SKILL_TITLE", title);
+                startActivity(chatIntent);
+            }
+        });
+
         // Rating & Peer Review Listener
         binding.btnRateSession.setOnClickListener(v -> showRatingDialog());
+    }
+
+    private void showStudentInquiriesDialog(String skillTitle, String tutorName) {
+        String cleanSkill = skillTitle != null ? skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault()) : "";
+        String cleanTutor = tutorName != null ? tutorName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault()) : "";
+
+        Toast.makeText(this, "Loading student inquiries from Cloud Firestore...", Toast.LENGTH_SHORT).show();
+
+        try {
+            FirebaseFirestore.getInstance().collection("chats")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        List<String> studentHandles = new ArrayList<>();
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                String docId = doc.getId().toLowerCase(Locale.getDefault());
+                                if (docId.startsWith(cleanSkill)) {
+                                    // Extract student handle from docId
+                                    String[] parts = docId.split("_");
+                                    for (String part : parts) {
+                                        if (!part.isEmpty() && !cleanSkill.contains(part) && !cleanTutor.equalsIgnoreCase(part)) {
+                                            String formatted = part.substring(0, 1).toUpperCase(Locale.getDefault()) + part.substring(1);
+                                            if (!studentHandles.contains(formatted)) {
+                                                studentHandles.add(formatted);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (studentHandles.isEmpty()) {
+                            Toast.makeText(SkillDetailActivity.this, "No student inquiries received yet for this skill.", Toast.LENGTH_LONG).show();
+                        } else {
+                            String[] inquiries = new String[studentHandles.size()];
+                            for (int i = 0; i < studentHandles.size(); i++) {
+                                inquiries[i] = "👤 " + studentHandles.get(i);
+                            }
+
+                            new AlertDialog.Builder(SkillDetailActivity.this)
+                                    .setTitle("Select Student Inquiry to Open Chat")
+                                    .setItems(inquiries, (dialog, which) -> {
+                                        String selectedStudentHandle = studentHandles.get(which);
+                                        Intent chatIntent = new Intent(SkillDetailActivity.this, ChatActivity.class);
+                                        chatIntent.putExtra("AUTHOR_NAME", selectedStudentHandle);
+                                        chatIntent.putExtra("SKILL_TITLE", skillTitle);
+                                        startActivity(chatIntent);
+                                    })
+                                    .setNegativeButton("Close", null)
+                                    .show();
+                        }
+                    });
+        } catch (Exception e) {
+            Toast.makeText(this, "Unable to query Firestore chats: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void showRatingDialog() {

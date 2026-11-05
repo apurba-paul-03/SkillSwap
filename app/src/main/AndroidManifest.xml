@@ -45,6 +45,12 @@
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:parentActivityName=".SkillDetailActivity"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".SyncSkillsService"
             android:foregroundServiceType="dataSync"
