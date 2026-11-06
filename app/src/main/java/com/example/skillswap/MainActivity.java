@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("AUTHOR", skill.getAuthorName());
             intent.putExtra("LOC", skill.getLocation());
             intent.putExtra("STATUS", skill.getStatus());
+            intent.putExtra("IMAGE_URL", skill.getImageUrl());
             intent.putExtra("CURRENT_USER_EMAIL", currentUserEmail);
             startActivity(intent);
         });

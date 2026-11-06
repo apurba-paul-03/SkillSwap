@@ -1,4 +1,5 @@
 package com.example.skillswap;
+
 public class SkillPost {
     private String id;
     private String title;
@@ -7,6 +8,7 @@ public class SkillPost {
     private String authorName;
     private String location;
     private String status;
+    private String imageUrl;
 
     // Empty constructor required for Firebase Firestore toObject() mapping
     public SkillPost() {}
@@ -19,15 +21,22 @@ public class SkillPost {
         this.authorName = authorName;
         this.location = location;
         this.status = status;
+        this.imageUrl = "";
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
+    public SkillPost(String id, String title, String category, String description, String authorName, String location, String status, String imageUrl) {
         this.id = id;
+        this.title = title;
+        this.category = category;
+        this.description = description;
+        this.authorName = authorName;
+        this.location = location;
+        this.status = status;
+        this.imageUrl = imageUrl;
     }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public String getTitle() { return title; }
     public String getCategory() { return category; }
@@ -35,4 +44,6 @@ public class SkillPost {
     public String getAuthorName() { return authorName; }
     public String getLocation() { return location; }
     public String getStatus() { return status; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

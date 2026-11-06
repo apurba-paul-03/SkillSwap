@@ -1,11 +1,20 @@
 package com.example.skillswap;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.skillswap.databinding.ItemSkillCardBinding;
 
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -47,11 +56,44 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
         holder.binding.tvLocation.setText(skill.getLocation());
         holder.binding.tvStatus.setText(skill.getStatus());
 
+        loadImageIntoView(holder.binding.imgSkillCard, skill.getImageUrl());
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(skill);
             }
         });
+    }
+
+    public static void loadImageIntoView(ImageView imageView, String urlStr) {
+        if (imageView == null) return;
+
+        if (urlStr == null || urlStr.trim().isEmpty()) {
+            imageView.setVisibility(View.GONE);
+            return;
+        }
+
+        if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+            new Thread(() -> {
+                try {
+                    InputStream input = new URL(urlStr).openStream();
+                    Bitmap bitmap = BitmapFactory.decodeStream(input);
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        imageView.setImageBitmap(bitmap);
+                        imageView.setVisibility(View.VISIBLE);
+                    });
+                } catch (Exception e) {
+                    new Handler(Looper.getMainLooper()).post(() -> imageView.setVisibility(View.GONE));
+                }
+            }).start();
+        } else {
+            try {
+                imageView.setImageURI(Uri.parse(urlStr));
+                imageView.setVisibility(View.VISIBLE);
+            } catch (Exception e) {
+                imageView.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override

@@ -53,7 +53,10 @@ public class SkillDetailActivity extends AppCompatActivity {
         authorName = getIntent().getStringExtra("AUTHOR");
         String location = getIntent().getStringExtra("LOC");
         String status = getIntent().getStringExtra("STATUS");
-        currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
+        String imageUrl = getIntent().getStringExtra("IMAGE_URL");
+        String currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
+
+        SkillAdapter.loadImageIntoView(binding.imgDetailPhoto, imageUrl);
 
         if (currentUserEmail == null || currentUserEmail.isEmpty()) {
             try {

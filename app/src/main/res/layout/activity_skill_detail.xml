@@ -12,6 +12,15 @@
         android:orientation="vertical"
         android:padding="20dp">
 
+        <ImageView
+            android:id="@+id/imgDetailPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginBottom="12dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:contentDescription="Skill Portfolio Photo" />
+
         <TextView
             android:id="@+id/tvDetailCategory"
             android:layout_width="wrap_content"
