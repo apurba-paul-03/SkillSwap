@@ -22,6 +22,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.skillswap.databinding.ActivityMainBinding;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -205,6 +211,38 @@ public class MainActivity extends AppCompatActivity {
 
         // Fetch Daily Motivational Study Quote from Retrofit REST API
         fetchMotivationalQuote();
+
+        // Setup Firebase Realtime Database Presence Counter
+        setupRealtimeDatabasePresence();
+    }
+
+    private void setupRealtimeDatabasePresence() {
+        try {
+            FirebaseDatabase database = FirebaseDatabase.getInstance();
+            DatabaseReference presenceRef = database.getReference("active_students_count");
+
+            presenceRef.setValue(ServerValue.increment(1));
+            presenceRef.onDisconnect().setValue(ServerValue.increment(-1));
+
+            presenceRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        Long count = snapshot.getValue(Long.class);
+                        long active = count != null ? Math.max(1, count) : 1;
+                        binding.tvActiveStudentsCount.setText("🟢 Live Students Online: " + active);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError error) {
+                    Log.e(TAG, "Realtime Database listener cancelled", error.toException());
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Firebase Realtime Database exception", e);
+            binding.tvActiveStudentsCount.setText("🟢 Live Students Online: 1");
+        }
     }
 
     private void loadSavedSkillsFromRoom() {
