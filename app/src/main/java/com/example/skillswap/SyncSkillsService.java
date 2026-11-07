@@ -29,7 +29,7 @@ public class SyncSkillsService extends Service {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
                     "SkillSwap Data Sync Service",
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_DEFAULT
             );
             serviceChannel.setDescription("Notification tray updates for SkillSwap background synchronization");
             NotificationManager manager = getSystemService(NotificationManager.class);
@@ -45,7 +45,7 @@ public class SyncSkillsService extends Service {
                 .setContentText(message)
                 .setSmallIcon(android.R.drawable.stat_notify_sync)
                 .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
     }
 
@@ -53,25 +53,23 @@ public class SyncSkillsService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "SyncSkillsService Started: Active Foreground Notification displayed.");
 
-        // Start Foreground Service with Notification Tray status card
-        Notification notification = buildNotification("Syncing latest peer skill posts & meeting spots...");
+        // Start Foreground Service with continuous Notification Tray status card
+        Notification notification = buildNotification("Syncing latest peer skill posts & campus sessions...");
         startForeground(NOTIFICATION_ID, notification);
 
         new Thread(() -> {
             try {
-                // Simulate network/database sync processing delay
-                Thread.sleep(4000);
-                Log.d(TAG, "Sync complete: SkillSwap Firestore & Retrofit cache synced.");
+                Log.d(TAG, "SyncSkillsService: Background data sync active.");
+                while (!Thread.currentThread().isInterrupted()) {
+                    Thread.sleep(10000);
+                    Log.d(TAG, "Background sync heartbeat OK");
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                Log.e(TAG, "Sync interrupted", e);
-            } finally {
-                stopForeground(STOP_FOREGROUND_REMOVE);
-                stopSelf(startId);
             }
         }).start();
 
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     @Nullable
