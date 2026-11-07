@@ -28,6 +28,7 @@ public class CreateSkillActivity extends AppCompatActivity {
     private EditText etCategory;
     private EditText etDescription;
     private EditText etLocation;
+    private EditText etPhone;
     private Button btnSubmit;
     private ImageView imgPreview;
     private ActivityResultLauncher<PickVisualMediaRequest> photoPickerLauncher;
@@ -47,6 +48,7 @@ public class CreateSkillActivity extends AppCompatActivity {
         etCategory = findViewById(R.id.etSkillCategory);
         etDescription = findViewById(R.id.etSkillDescription);
         etLocation = findViewById(R.id.etSkillLocation);
+        etPhone = findViewById(R.id.etSkillPhone);
         btnSubmit = findViewById(R.id.btnSubmitSkill);
         Button btnAttachPhoto = findViewById(R.id.btnAttachPhoto);
         imgPreview = findViewById(R.id.imgSkillPreview);
@@ -81,6 +83,7 @@ public class CreateSkillActivity extends AppCompatActivity {
         String category = etCategory.getText() != null ? etCategory.getText().toString().trim() : "";
         String description = etDescription.getText() != null ? etDescription.getText().toString().trim() : "";
         String location = etLocation.getText() != null ? etLocation.getText().toString().trim() : "";
+        String phone = etPhone.getText() != null ? etPhone.getText().toString().trim() : "";
 
         if (TextUtils.isEmpty(title)) {
             etTitle.setError("Title is required");
@@ -97,6 +100,9 @@ public class CreateSkillActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(location)) {
             etLocation.setError("Location is required");
             return;
+        }
+        if (TextUtils.isEmpty(phone)) {
+            phone = "01700000000";
         }
 
         btnSubmit.setEnabled(false);
@@ -127,7 +133,7 @@ public class CreateSkillActivity extends AppCompatActivity {
         }
 
         String id = UUID.randomUUID().toString().substring(0, 8);
-        SkillPost newPost = new SkillPost(id, title, category, description, authorName, location, "Available", selectedImageUriStr);
+        SkillPost newPost = new SkillPost(id, title, category, description, authorName, location, "Available", selectedImageUriStr, phone);
 
         // Upload to Firebase Storage if an image is selected
         if (!selectedImageUriStr.isEmpty()) {

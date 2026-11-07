@@ -1,5 +1,6 @@
 package com.example.skillswap;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -32,8 +33,8 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
     }
 
     public SkillAdapter(List<SkillPost> skillList, OnItemClickListener listener) {
-        this.fullSkillList = new ArrayList<>(skillList);
-        this.displayedSkillList = new ArrayList<>(skillList);
+        this.fullSkillList = new ArrayList<>(skillList != null ? skillList : new ArrayList<>());
+        this.displayedSkillList = new ArrayList<>(this.fullSkillList);
         this.listener = listener;
     }
 
@@ -48,13 +49,16 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
 
     @Override
     public void onBindViewHolder(@NonNull SkillViewHolder holder, int position) {
+        if (position < 0 || position >= displayedSkillList.size()) return;
         SkillPost skill = displayedSkillList.get(position);
-        holder.binding.tvTitle.setText(skill.getTitle());
-        holder.binding.tvCategory.setText(skill.getCategory());
-        holder.binding.tvDescription.setText(skill.getDescription());
-        holder.binding.tvAuthor.setText("By: " + skill.getAuthorName());
-        holder.binding.tvLocation.setText(skill.getLocation());
-        holder.binding.tvStatus.setText(skill.getStatus());
+        if (skill == null) return;
+
+        holder.binding.tvTitle.setText(skill.getTitle() != null ? skill.getTitle() : "Untitled Skill");
+        holder.binding.tvCategory.setText(skill.getCategory() != null ? skill.getCategory() : "General");
+        holder.binding.tvDescription.setText(skill.getDescription() != null ? skill.getDescription() : "");
+        holder.binding.tvAuthor.setText("By: " + (skill.getAuthorName() != null ? skill.getAuthorName() : "Student"));
+        holder.binding.tvLocation.setText(skill.getLocation() != null ? skill.getLocation() : "Campus");
+        holder.binding.tvStatus.setText(skill.getStatus() != null ? skill.getStatus() : "Available");
 
         loadImageIntoView(holder.binding.imgSkillCard, skill.getImageUrl());
 
@@ -79,20 +83,36 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
                     InputStream input = new URL(urlStr).openStream();
                     Bitmap bitmap = BitmapFactory.decodeStream(input);
                     new Handler(Looper.getMainLooper()).post(() -> {
-                        imageView.setImageBitmap(bitmap);
-                        imageView.setVisibility(View.VISIBLE);
+                        if (bitmap != null) {
+                            imageView.setImageBitmap(bitmap);
+                            imageView.setVisibility(View.VISIBLE);
+                        } else {
+                            imageView.setVisibility(View.GONE);
+                        }
                     });
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     new Handler(Looper.getMainLooper()).post(() -> imageView.setVisibility(View.GONE));
                 }
             }).start();
         } else {
-            try {
-                imageView.setImageURI(Uri.parse(urlStr));
-                imageView.setVisibility(View.VISIBLE);
-            } catch (Exception e) {
-                imageView.setVisibility(View.GONE);
-            }
+            final Context appContext = imageView.getContext().getApplicationContext();
+            new Thread(() -> {
+                try {
+                    Uri uri = Uri.parse(urlStr);
+                    InputStream input = appContext.getContentResolver().openInputStream(uri);
+                    Bitmap bitmap = BitmapFactory.decodeStream(input);
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        if (bitmap != null) {
+                            imageView.setImageBitmap(bitmap);
+                            imageView.setVisibility(View.VISIBLE);
+                        } else {
+                            imageView.setVisibility(View.GONE);
+                        }
+                    });
+                } catch (Throwable e) {
+                    new Handler(Looper.getMainLooper()).post(() -> imageView.setVisibility(View.GONE));
+                }
+            }).start();
         }
     }
 
@@ -103,7 +123,9 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
 
     public void updateList(List<SkillPost> newSkills) {
         fullSkillList.clear();
-        fullSkillList.addAll(newSkills);
+        if (newSkills != null) {
+            fullSkillList.addAll(newSkills);
+        }
         applyFilter();
     }
 
@@ -119,6 +141,7 @@ public class SkillAdapter extends RecyclerView.Adapter<SkillAdapter.SkillViewHol
         displayedSkillList.clear();
 
         for (SkillPost skill : fullSkillList) {
+            if (skill == null) continue;
             boolean matchesCategory = currentCategory.equalsIgnoreCase("All")
                     || (skill.getCategory() != null && skill.getCategory().equalsIgnoreCase(currentCategory));
 

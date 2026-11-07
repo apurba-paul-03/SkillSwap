@@ -113,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("LOC", skill.getLocation());
             intent.putExtra("STATUS", skill.getStatus());
             intent.putExtra("IMAGE_URL", skill.getImageUrl());
+            intent.putExtra("PHONE", skill.getPhoneNumber());
             intent.putExtra("CURRENT_USER_EMAIL", currentUserEmail);
             startActivity(intent);
         });

@@ -5,7 +5,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {SavedSkillEntity.class}, version = 1, exportSchema = false)
+@Database(entities = {SavedSkillEntity.class}, version = 2, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static AppDatabase instance;
@@ -18,7 +18,10 @@ public abstract class AppDatabase extends RoomDatabase {
                     context.getApplicationContext(),
                     AppDatabase.class,
                     "skillswap_room_db"
-            ).allowMainThreadQueries().build();
+            )
+            .fallbackToDestructiveMigration()
+            .allowMainThreadQueries()
+            .build();
         }
         return instance;
     }

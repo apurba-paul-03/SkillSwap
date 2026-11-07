@@ -35,8 +35,8 @@ public class SkillDetailActivity extends AppCompatActivity {
     private ActivitySkillDetailBinding binding;
     private ActivityResultLauncher<Intent> contactPickerLauncher;
 
-    private String skillTitle;
-    private String authorName;
+    private String skillTitle = "Untitled Skill";
+    private String authorName = "Student";
     private String currentUserEmail = "";
     private boolean hasAlreadyReviewed = false;
     private boolean isMyPost = false;
@@ -49,12 +49,24 @@ public class SkillDetailActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         String postId = getIntent().getStringExtra("ID");
-        skillTitle = getIntent().getStringExtra("TITLE");
-        String category = getIntent().getStringExtra("CATEGORY");
-        String description = getIntent().getStringExtra("DESC");
-        authorName = getIntent().getStringExtra("AUTHOR");
-        String location = getIntent().getStringExtra("LOC");
-        String status = getIntent().getStringExtra("STATUS");
+        String rawTitle = getIntent().getStringExtra("TITLE");
+        skillTitle = rawTitle != null && !rawTitle.isEmpty() ? rawTitle : "Untitled Skill";
+        
+        String rawCategory = getIntent().getStringExtra("CATEGORY");
+        String category = rawCategory != null && !rawCategory.isEmpty() ? rawCategory : "General";
+        
+        String rawDesc = getIntent().getStringExtra("DESC");
+        String description = rawDesc != null && !rawDesc.isEmpty() ? rawDesc : "No description provided.";
+        
+        String rawAuthor = getIntent().getStringExtra("AUTHOR");
+        authorName = rawAuthor != null && !rawAuthor.isEmpty() ? rawAuthor : "Student";
+        
+        String rawLoc = getIntent().getStringExtra("LOC");
+        String location = rawLoc != null && !rawLoc.isEmpty() ? rawLoc : "Campus Library";
+        
+        String rawStatus = getIntent().getStringExtra("STATUS");
+        String status = rawStatus != null && !rawStatus.isEmpty() ? rawStatus : "Available";
+        
         String imageUrl = getIntent().getStringExtra("IMAGE_URL");
         currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
 
@@ -116,22 +128,36 @@ public class SkillDetailActivity extends AppCompatActivity {
         });
 
         // Room DB Bookmark Setup
-        String skillId = skillTitle != null ? skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault()) : "skill_id";
+        String skillId = skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault());
         checkRoomBookmarkStatus(skillId);
 
-        binding.btnSaveSkill.setOnClickListener(v -> toggleRoomBookmark(skillId, skillTitle, category, description, authorName, location, status, imageUrl));
+        String authorPhone = getIntent().getStringExtra("PHONE");
+        if (authorPhone == null || authorPhone.trim().isEmpty()) {
+            authorPhone = "+8801700000000";
+        }
+        final String phoneToCall = authorPhone;
+
+        binding.btnSaveSkill.setOnClickListener(v -> toggleRoomBookmark(skillId, skillTitle, category, description, authorName, location, status, imageUrl, phoneToCall));
 
         binding.btnCall.setOnClickListener(v -> {
-            Intent callIntent = new Intent(Intent.ACTION_DIAL);
-            callIntent.setData(Uri.parse("tel:+8801700000000")); // Sample phone number
-            startActivity(callIntent);
+            try {
+                Intent callIntent = new Intent(Intent.ACTION_DIAL);
+                callIntent.setData(Uri.parse("tel:" + phoneToCall));
+                startActivity(callIntent);
+            } catch (Exception e) {
+                Toast.makeText(SkillDetailActivity.this, "Unable to launch phone dialer", Toast.LENGTH_SHORT).show();
+            }
         });
 
+        final String safeLoc = location;
         binding.btnMap.setOnClickListener(v -> {
-            Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(location));
-            Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-            mapIntent.setPackage("com.google.android.apps.maps");
-            startActivity(mapIntent);
+            try {
+                Uri gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(safeLoc));
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                startActivity(mapIntent);
+            } catch (Exception e) {
+                Toast.makeText(SkillDetailActivity.this, "Unable to open map", Toast.LENGTH_SHORT).show();
+            }
         });
 
         // Initialize ActivityResultLauncher for device Content Provider contact picker
@@ -184,11 +210,11 @@ public class SkillDetailActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void toggleRoomBookmark(String id, String title, String category, String description, String author, String location, String status, String imageUrl) {
+    private void toggleRoomBookmark(String id, String title, String category, String description, String author, String location, String status, String imageUrl, String phoneNumber) {
         new Thread(() -> {
             SavedSkillDao dao = AppDatabase.getInstance(this).savedSkillDao();
             if (isBookmarked) {
-                SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl);
+                SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl, phoneNumber);
                 dao.deleteSavedSkill(entity);
                 isBookmarked = false;
                 runOnUiThread(() -> {
@@ -196,7 +222,7 @@ public class SkillDetailActivity extends AppCompatActivity {
                     Toast.makeText(SkillDetailActivity.this, "Removed from Saved Skills", Toast.LENGTH_SHORT).show();
                 });
             } else {
-                SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl);
+                SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl, phoneNumber);
                 dao.insertSavedSkill(entity);
                 isBookmarked = true;
                 runOnUiThread(() -> {
@@ -407,10 +433,6 @@ public class SkillDetailActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Demonstrates accessing device shared data using Android Content Providers.
-     * Queries ContactsContract.CommonDataKinds.Phone ContentProvider URI.
-     */
     private void queryContactContentProvider(Uri contactUri) {
         String[] projection = new String[]{
                 ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
