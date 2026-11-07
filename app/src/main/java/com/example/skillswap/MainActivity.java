@@ -26,7 +26,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -47,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private String currentSearchQuery = "";
     private String currentUserEmail = "Guest Student";
     private boolean isTutorMode = false;
+
+    private static String cachedQuoteText = null;
+    private static String cachedQuoteAuthor = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,19 +222,21 @@ public class MainActivity extends AppCompatActivity {
     private void setupRealtimeDatabasePresence() {
         try {
             FirebaseDatabase database = FirebaseDatabase.getInstance();
-            DatabaseReference presenceRef = database.getReference("active_students_count");
+            DatabaseReference activeUsersRef = database.getReference("active_users");
 
-            presenceRef.setValue(ServerValue.increment(1));
-            presenceRef.onDisconnect().setValue(ServerValue.increment(-1));
+            String userKey = currentUserEmail != null && !currentUserEmail.isEmpty() ?
+                    currentUserEmail.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase() : "guest_user";
 
-            presenceRef.addValueEventListener(new ValueEventListener() {
+            DatabaseReference myPresenceRef = activeUsersRef.child(userKey);
+            myPresenceRef.setValue(true);
+            myPresenceRef.onDisconnect().removeValue();
+
+            activeUsersRef.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        Long count = snapshot.getValue(Long.class);
-                        long active = count != null ? Math.max(1, count) : 1;
-                        binding.tvActiveStudentsCount.setText("🟢 Live Students Online: " + active);
-                    }
+                    long activeCount = snapshot.getChildrenCount();
+                    long displayCount = Math.max(1, activeCount);
+                    binding.tvActiveStudentsCount.setText("🟢 Live Students Online: " + displayCount);
                 }
 
                 @Override
@@ -264,14 +268,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetchMotivationalQuote() {
+        if (cachedQuoteText != null && cachedQuoteAuthor != null) {
+            binding.tvQuoteText.setText(cachedQuoteText);
+            binding.tvQuoteAuthor.setText(cachedQuoteAuthor);
+            return;
+        }
+
         ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
         apiService.getRandomQuote().enqueue(new Callback<QuoteModel>() {
             @Override
             public void onResponse(Call<QuoteModel> call, Response<QuoteModel> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     QuoteModel quoteObj = response.body();
-                    binding.tvQuoteText.setText("\"" + quoteObj.getQuote() + "\"");
-                    binding.tvQuoteAuthor.setText("— " + quoteObj.getAuthor());
+                    cachedQuoteText = "\"" + quoteObj.getQuote() + "\"";
+                    cachedQuoteAuthor = "— " + quoteObj.getAuthor();
+                    binding.tvQuoteText.setText(cachedQuoteText);
+                    binding.tvQuoteAuthor.setText(cachedQuoteAuthor);
                     Log.d(TAG, "Retrofit API successfully fetched quote: " + quoteObj.getQuote());
                 }
             }

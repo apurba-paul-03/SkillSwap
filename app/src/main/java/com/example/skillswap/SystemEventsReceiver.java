@@ -15,6 +15,8 @@ import android.widget.Toast;
  */
 public class SystemEventsReceiver extends BroadcastReceiver {
 
+    private static Boolean lastConnectedState = null;
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null || intent.getAction() == null) return;
@@ -37,10 +39,14 @@ public class SystemEventsReceiver extends BroadcastReceiver {
             NetworkInfo activeNetwork = cm != null ? cm.getActiveNetworkInfo() : null;
             boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
 
-            if (isConnected) {
-                Toast.makeText(context, "🌐 Network Connected: Live Firestore Sync Active", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(context, "⚠️ Network Disconnected: Operating in Offline Cache Mode", Toast.LENGTH_LONG).show();
+            // Only notify when connectivity state actually changes to avoid toast spam on activity rotation
+            if (lastConnectedState == null || lastConnectedState != isConnected) {
+                lastConnectedState = isConnected;
+                if (isConnected) {
+                    Toast.makeText(context, "🌐 Network Connected: Live Firestore Sync Active", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "⚠️ Network Disconnected: Operating in Offline Cache Mode", Toast.LENGTH_LONG).show();
+                }
             }
         }
     }
