@@ -99,6 +99,53 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Daily Motivational Quote Banner (Retrofit REST API) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardQuote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#F0F7FF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💡 Daily Student Motivation (Retrofit API)"
+                    android:textColor="@color/design_default_color_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvQuoteText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="&quot;Success is the sum of small efforts, repeated day in and day out.&quot;"
+                    android:textColor="#222222"
+                    android:textSize="13sp"
+                    android:textStyle="italic" />
+
+                <TextView
+                    android:id="@+id/tvQuoteAuthor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="2dp"
+                    android:text="— Robert Collier"
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="11sp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
         <!-- Live Search Bar (Student Mode) -->
         <androidx.appcompat.widget.SearchView
             android:id="@+id/searchViewSkills"
@@ -172,22 +219,12 @@
             </com.google.android.material.chip.ChipGroup>
         </HorizontalScrollView>
 
-        <!-- Button to trigger the Retrofit Location Dialog -->
-        <Button
-            android:id="@+id/btnSelectLocation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Select External Meeting Spot (Retrofit API)"
-            android:backgroundTint="?attr/colorPrimary"
-            android:textColor="@android:color/white"
-            android:layout_marginBottom="6dp" />
-
         <!-- TextView to display the currently selected meeting spot -->
         <TextView
             android:id="@+id/tvSelectedLocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Selected Meeting Spot: None"
+            android:text="Selected Meeting Spot: Campus Central Library"
             android:textSize="14sp"
             android:textStyle="italic"
             android:textColor="@android:color/darker_gray"

@@ -12,7 +12,6 @@ import android.view.View;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
@@ -41,9 +40,6 @@ public class MainActivity extends AppCompatActivity {
     private String currentUserEmail = "Guest Student";
     private boolean isTutorMode = false;
 
-    // Hold fetched Retrofit locations in memory
-    private List<LocationModel> cachedLocations;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
             finish();
         });
 
-        cachedLocations = new ArrayList<>();
         binding.recyclerViewSkills.setLayoutManager(new LinearLayoutManager(this));
 
         // 2. Initialize empty backing list for the adapter
@@ -171,15 +166,26 @@ public class MainActivity extends AppCompatActivity {
         // Fetch skill data asynchronously from Firebase Firestore / Local Cache
         loadSkillsData();
 
-        // Fetch external Retrofit meeting locations in background
-        fetchExternalLocations();
+        // Fetch Daily Motivational Study Quote from Retrofit REST API
+        fetchMotivationalQuote();
+    }
 
-        // Button click listener to show the meeting spots dialog
-        binding.btnSelectLocation.setOnClickListener(v -> {
-            if (cachedLocations != null && !cachedLocations.isEmpty()) {
-                showLocationDialog(cachedLocations);
-            } else {
-                Toast.makeText(MainActivity.this, "Locations are still loading from API. Please wait...", Toast.LENGTH_SHORT).show();
+    private void fetchMotivationalQuote() {
+        ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
+        apiService.getRandomQuote().enqueue(new Callback<QuoteModel>() {
+            @Override
+            public void onResponse(Call<QuoteModel> call, Response<QuoteModel> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    QuoteModel quoteObj = response.body();
+                    binding.tvQuoteText.setText("\"" + quoteObj.getQuote() + "\"");
+                    binding.tvQuoteAuthor.setText("— " + quoteObj.getAuthor());
+                    Log.d(TAG, "Retrofit API successfully fetched quote: " + quoteObj.getQuote());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<QuoteModel> call, Throwable t) {
+                Log.e(TAG, "Retrofit API quote fetch failed, displaying fallback quote", t);
             }
         });
     }
@@ -238,48 +244,6 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
-    }
-
-    private void fetchExternalLocations() {
-        ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
-        apiService.getMeetingLocations().enqueue(new Callback<List<LocationModel>>() {
-            @Override
-            public void onResponse(Call<List<LocationModel>> call, Response<List<LocationModel>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    cachedLocations = response.body();
-                    Log.d("RetrofitSuccess", "Fetched " + cachedLocations.size() + " external meeting locations successfully!");
-                } else {
-                    Log.w("RetrofitWarning", "Response code: " + response.code());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<LocationModel>> call, Throwable t) {
-                Log.e("RetrofitError", "External API call failed: " + t.getMessage());
-            }
-        });
-    }
-
-    private void showLocationDialog(List<LocationModel> locations) {
-        String[] locationNames = new String[locations.size()];
-        for (int i = 0; i < locations.size(); i++) {
-            LocationModel loc = locations.get(i);
-            locationNames[i] = loc.getName() + " (" + loc.getCity() + ")";
-        }
-
-        new AlertDialog.Builder(this)
-                .setTitle("Select External Meeting Spot")
-                .setItems(locationNames, (dialog, which) -> {
-                    LocationModel selected = locations.get(which);
-                    String venueDetails = selected.getName() + " — City: " + selected.getCity();
-
-                    binding.tvSelectedLocation.setText("Meeting Spot: " + venueDetails);
-                    binding.tvSelectedLocation.setTextColor(getResources().getColor(android.R.color.black));
-
-                    Toast.makeText(MainActivity.this, "Meeting spot updated!", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
 
     @Override

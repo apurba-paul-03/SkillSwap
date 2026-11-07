@@ -51,6 +51,10 @@
             android:parentActivityName=".SkillDetailActivity"
             android:windowSoftInputMode="adjustResize" />
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyA_mock_key_for_presentation_demo" />
+
         <service
             android:name=".SyncSkillsService"
             android:foregroundServiceType="dataSync"
