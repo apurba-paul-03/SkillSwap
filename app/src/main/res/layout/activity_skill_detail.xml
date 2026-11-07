@@ -236,6 +236,16 @@
                 android:backgroundTint="@android:color/holo_purple"
                 android:textColor="@android:color/white"
                 android:text="Invite Classmate via Contacts (Content Provider)" />
+
+            <Button
+                android:id="@+id/btnDeleteSkill"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="@android:color/holo_red_dark"
+                android:textColor="@android:color/white"
+                android:visibility="gone"
+                android:text="🗑️ Delete Skill Post" />
         </LinearLayout>
 
     </LinearLayout>

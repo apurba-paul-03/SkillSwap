@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
         // 3. Setup the adapter with the list and click listener
         skillAdapter = new SkillAdapter(skillList, skill -> {
             Intent intent = new Intent(MainActivity.this, SkillDetailActivity.class);
+            intent.putExtra("ID", skill.getId());
             intent.putExtra("TITLE", skill.getTitle());
             intent.putExtra("CATEGORY", skill.getCategory());
             intent.putExtra("DESC", skill.getDescription());

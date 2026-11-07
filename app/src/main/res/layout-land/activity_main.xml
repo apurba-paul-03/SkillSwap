@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <!-- Left Pane: Controls, Header & Filters -->
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- User Header & Mode Switcher Bar -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvUserHeader"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Logged in as:"
+                                    android:textColor="@android:color/darker_gray"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/tvUserEmail"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="student@university.edu"
+                                    android:textColor="?android:attr/textColorPrimary"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvActiveStudentsCount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🟢 Live Students Online: 1"
+                                    android:textColor="#16A34A"
+                                    android:textSize="10sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <!-- Dark Mode Switch -->
+                            <com.google.android.material.switchmaterial.SwitchMaterial
+                                android:id="@+id/switchDarkMode"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🌙"
+                                android:textSize="12sp" />
+
+                            <Button
+                                android:id="@+id/btnLogout"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:text="Sign Out"
+                                android:textColor="@android:color/holo_red_dark" />
+
+                        </LinearLayout>
+
+                        <!-- Dual Mode Switcher -->
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/toggleGroupMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"
+                            app:checkedButton="@+id/btnModeStudent">
+
+                            <Button
+                                android:id="@+id/btnModeStudent"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="🎓 Student"
+                                android:textSize="11sp" />
+
+                            <Button
+                                android:id="@+id/btnModeTutor"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="👨‍🏫 Tutor"
+                                android:textSize="11sp" />
+
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Daily Motivational Quote Banner -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/cardQuote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    app:cardCornerRadius="10dp"
+                    app:cardElevation="2dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="💡 Daily Student Motivation (Retrofit API)"
+                            android:textColor="@color/design_default_color_primary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvQuoteText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="&quot;Success is the sum of small efforts.&quot;"
+                            android:textColor="?android:attr/textColorPrimary"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:id="@+id/tvQuoteAuthor"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:text="— Robert Collier"
+                            android:textColor="@android:color/darker_gray"
+                            android:textSize="10sp" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Live Search Bar -->
+                <androidx.appcompat.widget.SearchView
+                    android:id="@+id/searchViewSkills"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:background="@drawable/ic_launcher_background"
+                    android:backgroundTint="?android:attr/colorBackground"
+                    app:queryHint="Search skills..."
+                    app:iconifiedByDefault="false" />
+
+                <!-- Category Filters -->
+                <HorizontalScrollView
+                    android:id="@+id/scrollCategoryFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipGroupCategory"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        app:selectionRequired="true"
+                        app:singleLine="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipAll"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="All" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipSaved"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Saved ❤️" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipTech"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Technology" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipDesign"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Design" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipLanguage"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Language" />
+
+                    </com.google.android.material.chip.ChipGroup>
+                </HorizontalScrollView>
+
+                <TextView
+                    android:id="@+id/tvSelectedLocation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Meeting Spot: Campus Library"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:textColor="@android:color/darker_gray" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <!-- Right Pane: Skill Feed & List -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/tvFeedTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Available Skills to Learn"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewSkills"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Floating Action Button for Posting New Skill -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabAddSkill"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="16dp"
+        android:text="Post Skill"
+        android:visibility="gone"
+        android:textColor="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="@android:color/white" />
+
+</RelativeLayout>

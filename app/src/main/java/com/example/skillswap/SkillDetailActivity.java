@@ -48,6 +48,7 @@ public class SkillDetailActivity extends AppCompatActivity {
         binding = ActivitySkillDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        String postId = getIntent().getStringExtra("ID");
         skillTitle = getIntent().getStringExtra("TITLE");
         String category = getIntent().getStringExtra("CATEGORY");
         String description = getIntent().getStringExtra("DESC");
@@ -82,10 +83,37 @@ public class SkillDetailActivity extends AppCompatActivity {
         if (isMyPost) {
             binding.btnChatTutor.setText("View Student Inquiries & Chat");
             binding.btnRateSession.setVisibility(View.GONE);
+            binding.btnDeleteSkill.setVisibility(View.VISIBLE);
         } else {
             binding.btnChatTutor.setText("Chat with Tutor (1-on-1)");
             binding.btnRateSession.setVisibility(View.VISIBLE);
+            binding.btnDeleteSkill.setVisibility(View.GONE);
         }
+
+        binding.btnDeleteSkill.setOnClickListener(v -> {
+            new AlertDialog.Builder(SkillDetailActivity.this)
+                    .setTitle("Delete Skill Post")
+                    .setMessage("Are you sure you want to delete this skill post? This action cannot be undone.")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        SkillRepository.getInstance().deleteSkill(postId, skillTitle, new SkillRepository.SaveCallback() {
+                            @Override
+                            public void onSuccess() {
+                                runOnUiThread(() -> {
+                                    Toast.makeText(SkillDetailActivity.this, "Skill post deleted successfully.", Toast.LENGTH_SHORT).show();
+                                    setResult(RESULT_OK);
+                                    finish();
+                                });
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                runOnUiThread(() -> Toast.makeText(SkillDetailActivity.this, "Failed to delete skill post", Toast.LENGTH_SHORT).show());
+                            }
+                        });
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
 
         // Room DB Bookmark Setup
         String skillId = skillTitle != null ? skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault()) : "skill_id";

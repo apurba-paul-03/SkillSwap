@@ -244,15 +244,6 @@
         </HorizontalScrollView>
 
         <!-- TextView to display the currently selected meeting spot -->
-        <TextView
-            android:id="@+id/tvSelectedLocation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Selected Meeting Spot: Campus Central Library"
-            android:textSize="14sp"
-            android:textStyle="italic"
-            android:textColor="@android:color/darker_gray"
-            android:layout_marginBottom="8dp" />
 
         <!-- Section Title Header -->
         <TextView

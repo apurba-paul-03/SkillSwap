@@ -58,7 +58,12 @@ public class SkillRepository {
                             skillList.clear();
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 SkillPost post = document.toObject(SkillPost.class);
-                                skillList.add(post);
+                                if (post != null) {
+                                    if (post.getId() == null || post.getId().isEmpty()) {
+                                        post.setId(document.getId());
+                                    }
+                                    skillList.add(post);
+                                }
                             }
                             Log.d(TAG, "Successfully synced " + skillList.size() + " items from Firestore.");
                         } else {
@@ -91,6 +96,35 @@ public class SkillRepository {
                     .addOnFailureListener(e -> Log.e(TAG, "Firestore save failed, post retained in local list", e));
         } catch (Exception e) {
             Log.e(TAG, "Firestore Exception, local cache preserved", e);
+        }
+    }
+
+    public void deleteSkill(String skillId, String skillTitle, SaveCallback callback) {
+        if (skillList != null) {
+            for (int i = skillList.size() - 1; i >= 0; i--) {
+                SkillPost post = skillList.get(i);
+                if (post != null && ((skillId != null && skillId.equalsIgnoreCase(post.getId()))
+                        || (skillTitle != null && post.getTitle() != null && skillTitle.equalsIgnoreCase(post.getTitle())))) {
+                    
+                    String docIdToDelete = post.getId() != null && !post.getId().isEmpty() ? post.getId() : skillId;
+                    skillList.remove(i);
+
+                    // Delete from Firestore
+                    try {
+                        if (docIdToDelete != null && !docIdToDelete.isEmpty()) {
+                            db.collection("skills").document(docIdToDelete).delete()
+                                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Skill post deleted from Firestore: " + docIdToDelete))
+                                    .addOnFailureListener(e -> Log.e(TAG, "Firestore delete failed", e));
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Firestore delete exception", e);
+                    }
+                }
+            }
+        }
+
+        if (callback != null) {
+            callback.onSuccess();
         }
     }
 }
