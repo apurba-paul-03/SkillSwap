@@ -11,32 +11,8 @@ public class SkillPost {
     private String imageUrl;
     private String phoneNumber;
 
-    // Empty constructor required for Firebase Firestore toObject() mapping
+    // Empty constructor required for Firebase Firestore mapping
     public SkillPost() {}
-
-    public SkillPost(String id, String title, String category, String description, String authorName, String location, String status) {
-        this.id = id;
-        this.title = title;
-        this.category = category;
-        this.description = description;
-        this.authorName = authorName;
-        this.location = location;
-        this.status = status;
-        this.imageUrl = "";
-        this.phoneNumber = "01700000000";
-    }
-
-    public SkillPost(String id, String title, String category, String description, String authorName, String location, String status, String imageUrl) {
-        this.id = id;
-        this.title = title;
-        this.category = category;
-        this.description = description;
-        this.authorName = authorName;
-        this.location = location;
-        this.status = status;
-        this.imageUrl = imageUrl;
-        this.phoneNumber = "01700000000";
-    }
 
     public SkillPost(String id, String title, String category, String description, String authorName, String location, String status, String imageUrl, String phoneNumber) {
         this.id = id;
@@ -46,7 +22,7 @@ public class SkillPost {
         this.authorName = authorName;
         this.location = location;
         this.status = status;
-        this.imageUrl = imageUrl;
+        this.imageUrl = imageUrl != null ? imageUrl : "";
         this.phoneNumber = phoneNumber != null && !phoneNumber.trim().isEmpty() ? phoneNumber : "01700000000";
     }
 

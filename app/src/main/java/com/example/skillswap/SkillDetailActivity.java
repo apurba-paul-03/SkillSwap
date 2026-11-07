@@ -38,7 +38,6 @@ public class SkillDetailActivity extends AppCompatActivity {
     private String skillTitle = "Untitled Skill";
     private String authorName = "Student";
     private String currentUserEmail = "";
-    private boolean hasAlreadyReviewed = false;
     private boolean isMyPost = false;
     private boolean isBookmarked = false;
 
@@ -257,7 +256,6 @@ public class SkillDetailActivity extends AppCompatActivity {
                                 String reviewerEmail = doc.getString("reviewerEmail");
 
                                 if (reviewerEmail != null && reviewerEmail.equalsIgnoreCase(currentUserEmail)) {
-                                    hasAlreadyReviewed = true;
                                     binding.btnRateSession.setText("Review Submitted (✓)");
                                 }
 
@@ -348,7 +346,6 @@ public class SkillDetailActivity extends AppCompatActivity {
         // Render card locally
         renderReviewCard(ratingStars, comment, reviewerName);
 
-        hasAlreadyReviewed = true;
         binding.btnRateSession.setText("Review Submitted (✓)");
 
         String cleanSkill = skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault());
