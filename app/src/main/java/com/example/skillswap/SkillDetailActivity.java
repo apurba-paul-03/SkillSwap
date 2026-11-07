@@ -40,6 +40,7 @@ public class SkillDetailActivity extends AppCompatActivity {
     private String currentUserEmail = "";
     private boolean hasAlreadyReviewed = false;
     private boolean isMyPost = false;
+    private boolean isBookmarked = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +55,7 @@ public class SkillDetailActivity extends AppCompatActivity {
         String location = getIntent().getStringExtra("LOC");
         String status = getIntent().getStringExtra("STATUS");
         String imageUrl = getIntent().getStringExtra("IMAGE_URL");
-        String currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
+        currentUserEmail = getIntent().getStringExtra("CURRENT_USER_EMAIL");
 
         SkillAdapter.loadImageIntoView(binding.imgDetailPhoto, imageUrl);
 
@@ -77,7 +78,7 @@ public class SkillDetailActivity extends AppCompatActivity {
         String currentHandle = currentUserEmail != null && currentUserEmail.contains("@") ? currentUserEmail.split("@")[0] : currentUserEmail;
         isMyPost = authorName != null && (authorName.equalsIgnoreCase(currentHandle) || authorName.equalsIgnoreCase(currentUserEmail));
 
-        // Problem 2 Fix: Tutors cannot rate themselves on their own post
+        // Tutors cannot rate themselves on their own post
         if (isMyPost) {
             binding.btnChatTutor.setText("View Student Inquiries & Chat");
             binding.btnRateSession.setVisibility(View.GONE);
@@ -85,6 +86,12 @@ public class SkillDetailActivity extends AppCompatActivity {
             binding.btnChatTutor.setText("Chat with Tutor (1-on-1)");
             binding.btnRateSession.setVisibility(View.VISIBLE);
         }
+
+        // Room DB Bookmark Setup
+        String skillId = skillTitle != null ? skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault()) : "skill_id";
+        checkRoomBookmarkStatus(skillId);
+
+        binding.btnSaveSkill.setOnClickListener(v -> toggleRoomBookmark(skillId, skillTitle, category, description, authorName, location, status, imageUrl));
 
         binding.btnCall.setOnClickListener(v -> {
             Intent callIntent = new Intent(Intent.ACTION_DIAL);
@@ -130,16 +137,46 @@ public class SkillDetailActivity extends AppCompatActivity {
         });
 
         // Rating & Peer Review Listener
-        binding.btnRateSession.setOnClickListener(v -> {
-            if (hasAlreadyReviewed) {
-                Toast.makeText(this, "You have already submitted a review for this skill session.", Toast.LENGTH_SHORT).show();
-            } else {
-                showRatingDialog();
-            }
-        });
+        binding.btnRateSession.setOnClickListener(v -> showRatingDialog());
 
-        // Problem 1 Fix: Load reviews from Cloud Firestore persistently
+        // Load reviews from Cloud Firestore persistently
         loadReviewsFromFirestore();
+    }
+
+    private void checkRoomBookmarkStatus(String skillId) {
+        new Thread(() -> {
+            isBookmarked = AppDatabase.getInstance(this).savedSkillDao().isSkillSaved(skillId);
+            runOnUiThread(() -> {
+                if (isBookmarked) {
+                    binding.btnSaveSkill.setText("Saved in Room DB (❤️)");
+                } else {
+                    binding.btnSaveSkill.setText("Bookmark Skill (Room DB ❤️)");
+                }
+            });
+        }).start();
+    }
+
+    private void toggleRoomBookmark(String id, String title, String category, String description, String author, String location, String status, String imageUrl) {
+        new Thread(() -> {
+            SavedSkillDao dao = AppDatabase.getInstance(this).savedSkillDao();
+            if (isBookmarked) {
+                SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl);
+                dao.deleteSavedSkill(entity);
+                isBookmarked = false;
+                runOnUiThread(() -> {
+                    binding.btnSaveSkill.setText("Bookmark Skill (Room DB ❤️)");
+                    Toast.makeText(SkillDetailActivity.this, "Removed from Room DB Saved Skills", Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl);
+                dao.insertSavedSkill(entity);
+                isBookmarked = true;
+                runOnUiThread(() -> {
+                    binding.btnSaveSkill.setText("Saved in Room DB (❤️)");
+                    Toast.makeText(SkillDetailActivity.this, "Skill saved to offline Room Database!", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
     }
 
     private void loadReviewsFromFirestore() {
@@ -165,7 +202,7 @@ public class SkillDetailActivity extends AppCompatActivity {
                                 String reviewerName = doc.getString("reviewerName");
                                 String reviewerEmail = doc.getString("reviewerEmail");
 
-                                if (reviewerEmail != null && currentUserEmail != null && reviewerEmail.equalsIgnoreCase(currentUserEmail)) {
+                                if (reviewerEmail != null && reviewerEmail.equalsIgnoreCase(currentUserEmail)) {
                                     hasAlreadyReviewed = true;
                                     binding.btnRateSession.setText("Review Submitted (✓)");
                                 }
@@ -201,7 +238,6 @@ public class SkillDetailActivity extends AppCompatActivity {
         reviewTv.setTextColor(Color.parseColor("#333333"));
         reviewTv.setTextSize(13);
 
-        // Problem 4 Fix: Accurate star symbol representation for 1 to 5 stars
         String starSymbols;
         if (stars >= 5.0) starSymbols = "⭐⭐⭐⭐⭐";
         else if (stars >= 4.0) starSymbols = "⭐⭐⭐⭐";
@@ -258,11 +294,9 @@ public class SkillDetailActivity extends AppCompatActivity {
         // Render card locally
         renderReviewCard(ratingStars, comment, reviewerName);
 
-        // Problem 3 Fix: Mark reviewed and update button state
         hasAlreadyReviewed = true;
         binding.btnRateSession.setText("Review Submitted (✓)");
 
-        // Problem 1 Fix: Save review persistently in Cloud Firestore
         String cleanSkill = skillTitle.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase(Locale.getDefault());
         String docId = currentUserEmail != null && !currentUserEmail.isEmpty() ? currentUserEmail.replaceAll("[^a-zA-Z0-9]", "_") : "review_" + System.currentTimeMillis();
 

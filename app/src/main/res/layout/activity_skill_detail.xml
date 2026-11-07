@@ -195,8 +195,16 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="24dp"
             android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btnSaveSkill"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Bookmark Skill (Room DB ❤️)" />
 
             <Button
                 android:id="@+id/btnChatTutor"
@@ -204,7 +212,7 @@
                 android:layout_height="wrap_content"
                 android:backgroundTint="?attr/colorPrimary"
                 android:textColor="@android:color/white"
-                android:text="Chat with Tutor (Firebase Real-Time)" />
+                android:text="Chat with Tutor (1-on-1)" />
 
             <Button
                 android:id="@+id/btnCall"

@@ -106,14 +106,22 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 currentSearchQuery = query;
-                skillAdapter.filter(currentSearchQuery, selectedCategory);
+                if (selectedCategory.contains("Saved")) {
+                    loadSavedSkillsFromRoom();
+                } else {
+                    skillAdapter.filter(currentSearchQuery, selectedCategory);
+                }
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
                 currentSearchQuery = newText;
-                skillAdapter.filter(currentSearchQuery, selectedCategory);
+                if (selectedCategory.contains("Saved")) {
+                    loadSavedSkillsFromRoom();
+                } else {
+                    skillAdapter.filter(currentSearchQuery, selectedCategory);
+                }
                 return true;
             }
         });
@@ -130,7 +138,14 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 selectedCategory = "All";
             }
-            skillAdapter.filter(currentSearchQuery, selectedCategory);
+
+            if (selectedCategory.contains("Saved")) {
+                loadSavedSkillsFromRoom();
+            } else {
+                binding.tvFeedTitle.setText("Available Skills to Learn");
+                skillAdapter.updateList(skillList);
+                skillAdapter.filter(currentSearchQuery, selectedCategory);
+            }
         });
 
         // Initialize ActivityResultLauncher for CreateSkillActivity
@@ -170,6 +185,23 @@ public class MainActivity extends AppCompatActivity {
         fetchMotivationalQuote();
     }
 
+    private void loadSavedSkillsFromRoom() {
+        binding.tvFeedTitle.setText("Saved Bookmarked Skills (Room DB ❤️)");
+        new Thread(() -> {
+            List<SavedSkillEntity> savedEntities = AppDatabase.getInstance(this).savedSkillDao().getAllSavedSkills();
+            List<SkillPost> savedPosts = new ArrayList<>();
+            for (SavedSkillEntity entity : savedEntities) {
+                savedPosts.add(entity.toSkillPost());
+            }
+            runOnUiThread(() -> {
+                if (savedPosts.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "No saved skills yet. Tap 'Bookmark Skill' on any session page!", Toast.LENGTH_LONG).show();
+                }
+                skillAdapter.updateList(savedPosts);
+            });
+        }).start();
+    }
+
     private void fetchMotivationalQuote() {
         ApiService apiService = RetrofitClient.getClient().create(ApiService.class);
         apiService.getRandomQuote().enqueue(new Callback<QuoteModel>() {
@@ -194,8 +226,12 @@ public class MainActivity extends AppCompatActivity {
         binding.searchViewSkills.setVisibility(View.VISIBLE);
         binding.scrollCategoryFilter.setVisibility(View.VISIBLE);
         binding.fabAddSkill.setVisibility(View.GONE);
-        binding.tvFeedTitle.setText("Available Skills to Learn");
-        loadSkillsData();
+        if (selectedCategory.contains("Saved")) {
+            loadSavedSkillsFromRoom();
+        } else {
+            binding.tvFeedTitle.setText("Available Skills to Learn");
+            loadSkillsData();
+        }
     }
 
     private void applyTutorModeUI() {
@@ -225,6 +261,8 @@ public class MainActivity extends AppCompatActivity {
                     skillList.addAll(skills);
                     if (isTutorMode) {
                         applyTutorModeUI();
+                    } else if (selectedCategory.contains("Saved")) {
+                        loadSavedSkillsFromRoom();
                     } else {
                         skillAdapter.updateList(skillList);
                     }
@@ -249,6 +287,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (selectedCategory.contains("Saved")) {
+            loadSavedSkillsFromRoom();
+        }
         // Register System Broadcast Receiver for Battery, Airplane Mode, and Connectivity events
         IntentFilter filter = new IntentFilter();
         filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
