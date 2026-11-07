@@ -135,7 +135,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="💡 Daily Student Motivation (Retrofit API)"
+                    android:text="💡 Daily Student Motivation"
                     android:textColor="@color/design_default_color_primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />

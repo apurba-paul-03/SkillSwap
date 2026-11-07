@@ -85,7 +85,7 @@ public class SkillDetailActivity extends AppCompatActivity {
             binding.btnRateSession.setVisibility(View.GONE);
             binding.btnDeleteSkill.setVisibility(View.VISIBLE);
         } else {
-            binding.btnChatTutor.setText("Chat with Tutor (1-on-1)");
+            binding.btnChatTutor.setText("Chat with Tutor");
             binding.btnRateSession.setVisibility(View.VISIBLE);
             binding.btnDeleteSkill.setVisibility(View.GONE);
         }
@@ -176,9 +176,9 @@ public class SkillDetailActivity extends AppCompatActivity {
             isBookmarked = AppDatabase.getInstance(this).savedSkillDao().isSkillSaved(skillId);
             runOnUiThread(() -> {
                 if (isBookmarked) {
-                    binding.btnSaveSkill.setText("Saved in Room DB (❤️)");
+                    binding.btnSaveSkill.setText("Saved Skill ❤️");
                 } else {
-                    binding.btnSaveSkill.setText("Bookmark Skill (Room DB ❤️)");
+                    binding.btnSaveSkill.setText("Bookmark Skill ❤️");
                 }
             });
         }).start();
@@ -192,16 +192,16 @@ public class SkillDetailActivity extends AppCompatActivity {
                 dao.deleteSavedSkill(entity);
                 isBookmarked = false;
                 runOnUiThread(() -> {
-                    binding.btnSaveSkill.setText("Bookmark Skill (Room DB ❤️)");
-                    Toast.makeText(SkillDetailActivity.this, "Removed from Room DB Saved Skills", Toast.LENGTH_SHORT).show();
+                    binding.btnSaveSkill.setText("Bookmark Skill ❤️");
+                    Toast.makeText(SkillDetailActivity.this, "Removed from Saved Skills", Toast.LENGTH_SHORT).show();
                 });
             } else {
                 SavedSkillEntity entity = new SavedSkillEntity(id, title, category, description, author, location, status, imageUrl);
                 dao.insertSavedSkill(entity);
                 isBookmarked = true;
                 runOnUiThread(() -> {
-                    binding.btnSaveSkill.setText("Saved in Room DB (❤️)");
-                    Toast.makeText(SkillDetailActivity.this, "Skill saved to offline Room Database!", Toast.LENGTH_SHORT).show();
+                    binding.btnSaveSkill.setText("Saved Skill ❤️");
+                    Toast.makeText(SkillDetailActivity.this, "Skill saved to your collection!", Toast.LENGTH_SHORT).show();
                 });
             }
         }).start();
@@ -426,8 +426,8 @@ public class SkillDetailActivity extends AppCompatActivity {
                 String number = numberIndex >= 0 ? cursor.getString(numberIndex) : "";
 
                 new AlertDialog.Builder(this)
-                        .setTitle("Content Provider Result")
-                        .setMessage("Queried shared device data via ContactsContract Content Provider:\n\n"
+                        .setTitle("Contact Invitation")
+                        .setMessage("Invitation Details:\n\n"
                                 + "👤 Contact Name: " + name + "\n"
                                 + "📞 Phone: " + number)
                         .setPositiveButton("Send SMS Invitation", (dialog, which) -> {

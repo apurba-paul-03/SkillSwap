@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadSavedSkillsFromRoom() {
-        binding.tvFeedTitle.setText("Saved Bookmarked Skills (Room DB ❤️)");
+        binding.tvFeedTitle.setText("Saved Skills ❤️");
         new Thread(() -> {
             List<SavedSkillEntity> savedEntities = AppDatabase.getInstance(this).savedSkillDao().getAllSavedSkills();
             List<SkillPost> savedPosts = new ArrayList<>();

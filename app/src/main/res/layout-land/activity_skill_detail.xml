@@ -107,7 +107,7 @@
                             android:id="@+id/tvRatingScore"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="⭐ 4.8"
+                            android:text="⭐ 0.0"
                             android:textColor="@android:color/black"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -118,7 +118,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginStart="6dp"
-                            android:text="(2 Reviews)"
+                            android:text="(0 Reviews)"
                             android:textColor="@android:color/darker_gray"
                             android:textSize="12sp" />
 
@@ -203,7 +203,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="6dp"
-                    android:text="Bookmark Skill (Room DB ❤️)" />
+                    android:text="Bookmark Skill ❤️" />
 
                 <Button
                     android:id="@+id/btnChatTutor"
@@ -211,21 +211,21 @@
                     android:layout_height="wrap_content"
                     android:backgroundTint="?attr/colorPrimary"
                     android:textColor="@android:color/white"
-                    android:text="Chat with Tutor (1-on-1)" />
+                    android:text="Chat with Tutor" />
 
                 <Button
                     android:id="@+id/btnCall"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Call Author (Intent)" />
+                    android:text="Call Author" />
 
                 <Button
                     android:id="@+id/btnMap"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Open Location on Map (Intent)" />
+                    android:text="Open Location on Map" />
 
                 <Button
                     android:id="@+id/btnInviteContact"
@@ -234,7 +234,7 @@
                     android:layout_marginTop="6dp"
                     android:backgroundTint="@android:color/holo_purple"
                     android:textColor="@android:color/white"
-                    android:text="Invite Classmate via Contacts (Content Provider)" />
+                    android:text="Invite Classmate via Contacts" />
 
                 <Button
                     android:id="@+id/btnDeleteSkill"
